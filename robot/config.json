@@ -1,0 +1,24 @@
+{
+  "teamName": "Princess Lulu",
+  "players": [
+    "Scottie Scheffler",
+    "Tommy Fleetwood",
+    "Matt Fitzpatrick",
+    "Jon Rahm",
+    "Wyndham Clark",
+    "Ludvig Åberg"
+  ],
+  "opponentName": "Team Trev",
+  "opponentPlayers": [
+    "Rory McIlroy",
+    "Collin Morikawa",
+    "Tyrrell Hatton",
+    "Xander Schauffele",
+    "Russell Henley",
+    "Chris Gotterup"
+  ],
+  "countBest": 6,
+  "ntfyServer": "https://ntfy.sh",
+  "ntfyTopic": "mmt-413ab7587a6e",
+  "notifyOnOpponentMove": false
+}
