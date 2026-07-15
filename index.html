@@ -75,6 +75,14 @@
   .lead-pill.tie{background:var(--line);color:var(--muted)}
   .yourtag{font-size:10px;font-weight:800;color:var(--gold);letter-spacing:.4px;text-transform:uppercase;margin-top:3px;height:12px}
   .to-good{color:var(--good)} .to-bad{color:var(--bad)} .to-even{color:var(--even)}
+  .tavatar{width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid var(--line);display:none;margin:0 auto 7px;box-shadow:0 2px 8px rgba(8,36,62,.18)}
+  .thead-av{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,.55);flex:none}
+  .photorow{display:flex;align-items:center;gap:12px}
+  .av-prev{width:56px;height:56px;border-radius:50%;background:var(--paper) center/cover no-repeat;border:2px dashed var(--line);flex:none;display:grid;place-items:center;color:var(--muted);font-size:20px}
+  .av-prev.has{border-style:solid;border-color:var(--gold)}
+  .av-prev.has::after{content:''}
+  .av-prev:not(.has)::after{content:'🐾'}
+  .filepick{cursor:pointer;display:inline-flex;align-items:center}
 
   /* Notify bar */
   .notifybar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,rgba(244,183,64,.05))}
@@ -158,6 +166,7 @@
   <div class="summary">
     <div class="scoreband">
       <div class="tside">
+        <img class="tavatar" id="avA" alt="">
         <div class="nm" id="sA">Team A</div>
         <div class="tot" id="totA">—</div>
         <div class="thru" id="thruA"></div>
@@ -168,6 +177,7 @@
         <div class="lead-pill tie" id="leadPill">—</div>
       </div>
       <div class="tside">
+        <img class="tavatar" id="avB" alt="">
         <div class="nm" id="sB">Team B</div>
         <div class="tot" id="totB">—</div>
         <div class="thru" id="thruB"></div>
@@ -205,11 +215,25 @@
 
   <div class="section-t" style="margin-left:16px">Team A</div>
   <div class="field"><label>Team name</label><input type="text" id="nameA"></div>
+  <div class="field"><label>Team photo</label>
+    <div class="photorow">
+      <div class="av-prev" id="prevA"></div>
+      <label class="btn ghost sm filepick">Choose photo<input type="file" accept="image/*" id="fileA" hidden></label>
+      <button class="btn ghost sm" id="rmA">Remove</button>
+    </div>
+  </div>
   <div id="rosterA"></div>
   <button class="addbtn" data-add="A">＋ Add player</button>
 
   <div class="section-t" style="margin-left:16px">Team B</div>
   <div class="field"><label>Team name</label><input type="text" id="nameB"></div>
+  <div class="field"><label>Team photo</label>
+    <div class="photorow">
+      <div class="av-prev" id="prevB"></div>
+      <label class="btn ghost sm filepick">Choose photo<input type="file" accept="image/*" id="fileB" hidden></label>
+      <button class="btn ghost sm" id="rmB">Remove</button>
+    </div>
+  </div>
   <div id="rosterB"></div>
   <button class="addbtn" data-add="B">＋ Add player</button>
 
@@ -226,11 +250,12 @@ const DEFAULT = {
   mine: 'B',                // Princess Lulu
   sync: 'on',
   teams: {
-    A: { name: 'Team Trev', players: ['Rory McIlroy','Collin Morikawa','Tyrrell Hatton','Xander Schauffele','Russell Henley','Chris Gotterup'] },
-    B: { name: 'Princess Lulu', players: ['Scottie Scheffler','Tommy Fleetwood','Matt Fitzpatrick','Jon Rahm','Wyndham Clark','Ludvig Åberg'] }
+    A: { name: 'Strike Eagle', players: ['Rory McIlroy','Collin Morikawa','Tyrrell Hatton','Xander Schauffele','Russell Henley','Chris Gotterup'] },
+    B: { name: 'Bogey Bird Sparkle Shark', players: ['Scottie Scheffler','Tommy Fleetwood','Matt Fitzpatrick','Jon Rahm','Wyndham Clark','Ludvig Åberg'] }
   },
   bench: {},                // "A:Rory McIlroy" -> true (benched, doesn't count)
-  manual: {}                // "A:Rory McIlroy" -> "-2"  (used when sync off)
+  manual: {},               // "A:Rory McIlroy" -> "-2"  (used when sync off)
+  avatars: { A: '', B: '' } // team photos, stored as compressed data URLs
 };
 let S = load();
 function load(){ try{ return Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(LS)||'{}')); }catch(e){ return structuredClone(DEFAULT); } }
@@ -291,6 +316,7 @@ function render(){
 
   $('#yourA').textContent = S.mine==='A'? '★ Your team':'';
   $('#yourB').textContent = S.mine==='B'? '★ Your team':'';
+  setAvatar('#avA', S.avatars.A); setAvatar('#avB', S.avatars.B);
 
   // thru summary (players still on course)
   $('#thruA').textContent = playingSummary('A');
@@ -350,6 +376,7 @@ function renderTeams(){
     }
     card.innerHTML=`
       <div class="team-h">
+        ${S.avatars[side]?`<img class="thead-av" src="${S.avatars[side]}" alt="">`:''}
         <div class="nm">${esc(t.name)} ${mine?'<span class="mine-star">★</span>':''}</div>
         <div class="tot ${parClass(tot.counted?tot.sum:null)}">${tot.counted?parPretty(tot.sum):'—'}</div>
       </div>
@@ -370,6 +397,21 @@ function softUpdateTotals(){ // update totals without re-rendering inputs (keeps
   if(tA.counted&&tB.counted){ if(tA.sum===tB.sum){pill.textContent='All square';pill.className='lead-pill tie';} else {const lead=tA.sum<tB.sum?'A':'B';pill.textContent=`${S.teams[lead].name.split(' ')[0]} +${Math.abs(tA.sum-tB.sum)}`;pill.className='lead-pill';} }
 }
 const esc=(s)=> String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* team photos: pick from camera roll -> downscale to a small square data URL */
+function setAvatar(sel, src){ const el=$(sel); if(!el) return; if(src){ el.src=src; el.style.display='block'; } else { el.removeAttribute('src'); el.style.display='none'; } }
+function renderPrev(side){ const p=$('#prev'+side); if(!p) return; const src=S.avatars[side]; p.style.backgroundImage=src?`url(${src})`:''; p.classList.toggle('has',!!src); }
+function readAvatar(file, cb){
+  const img=new Image(); const url=URL.createObjectURL(file);
+  img.onload=()=>{
+    const size=200, c=document.createElement('canvas'); c.width=size; c.height=size;
+    const ctx=c.getContext('2d'); const s=Math.min(img.width,img.height);
+    ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);
+    URL.revokeObjectURL(url); cb(c.toDataURL('image/jpeg',0.82));
+  };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast('Could not read that image'); };
+  img.src=url;
+}
 
 /* ---------------- ESPN sync ---------------- */
 const API='https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
@@ -484,6 +526,7 @@ function setNotifyState(on){
 function openSheet(){
   $('#nameA').value=S.teams.A.name; $('#nameB').value=S.teams.B.name;
   renderRoster('A'); renderRoster('B'); markRadios();
+  renderPrev('A'); renderPrev('B');
   $('#sheetBg').classList.add('show'); $('#sheet').classList.add('show');
 }
 function closeSheet(){ $('#sheetBg').classList.remove('show'); $('#sheet').classList.remove('show'); commitNames(); sync(); }
@@ -517,6 +560,10 @@ $('#notifyBtn').onclick=toggleNotify;
 document.querySelectorAll('#mineRadio button').forEach(b=> b.onclick=()=>{ S.mine=b.dataset.mine; hasBaseline=false; prevScores={}; save(); markRadios(); render(); });
 document.querySelectorAll('#syncRadio button').forEach(b=> b.onclick=()=>{ S.sync=b.dataset.sync; save(); markRadios(); render(); sync(); });
 document.querySelectorAll('[data-add]').forEach(b=> b.onclick=()=>{ const sd=b.dataset.add; S.teams[sd].players.push('New player'); save(); renderRoster(sd); });
+['A','B'].forEach(side=>{
+  const f=$('#file'+side); if(f) f.onchange=()=>{ const file=f.files&&f.files[0]; if(!file) return; readAvatar(file,(data)=>{ S.avatars[side]=data; save(); renderPrev(side); render(); toast('Photo set'); }); f.value=''; };
+  const rm=$('#rm'+side); if(rm) rm.onclick=()=>{ S.avatars[side]=''; save(); renderPrev(side); render(); };
+});
 
 if(Notification && Notification.permission==='granted') setNotifyState(true);
 

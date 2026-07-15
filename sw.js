@@ -1,6 +1,6 @@
 // Major Match Tracker — service worker
 // Purpose: make the app installable + able to show notifications from the background.
-const CACHE = 'mmt-v1';
+const CACHE = 'mmt-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -22,10 +22,22 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// App shell: cache-first for our own assets; always go to network for ESPN.
+// The page itself: network-first so app updates show up as soon as you're online
+// (falls back to cache when offline). Other same-origin assets: cache-first.
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return; // let ESPN calls hit the network
+  const isDoc = e.request.mode === 'navigate' || e.request.destination === 'document';
+  if (isDoc) {
+    e.respondWith(
+      fetch(e.request).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put('./index.html', copy));
+        return res;
+      }).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then((hit) => hit || fetch(e.request).catch(() => caches.match('./index.html')))
   );
