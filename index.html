@@ -644,11 +644,12 @@ function renderWeekendBanner(){
       : 'Pick 4 starters per team (bench 2). Add an optional 7th from the cut-makers. Then lock after Friday — empty starter slots cost +10 each.'}</div>
     <div class="wkb-actions">${S.locked
       ? `<button class="btn sm" id="copyCfgBtn">📋 Copy robot config</button><button class="btn ghost sm" id="unlockBtn">Unlock</button>`
-      : `<button class="btn sm" id="lockBtn">🔒 Lock weekend lineups</button>`}</div>
+      : `<button class="btn sm" id="lockBtn">🔒 Lock weekend lineups</button>`}${(EVENT.round||0)<3 ? `<button class="btn ghost sm" id="exitWkBtn">← Rounds 1–2</button>` : ''}</div>
   </div>`;
   const lb=$('#lockBtn'); if(lb) lb.onclick=lockLineups;
   const ub=$('#unlockBtn'); if(ub) ub.onclick=unlockLineups;
   const cb=$('#copyCfgBtn'); if(cb) cb.onclick=exportRobotConfig;
+  const xb=$('#exitWkBtn'); if(xb) xb.onclick=()=>{ S.planWknd=false; S.locked=false; save(); render(); toast('Back to Rounds 1–2 — all 6 count'); };
 }
 function exportRobotConfig(){
   const mine=S.mine, opp=(mine==='A'?'B':'A');
