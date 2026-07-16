@@ -648,12 +648,13 @@ function renderWeekendBanner(){
 }
 function exportRobotConfig(){
   const mine=S.mine, opp=(mine==='A'?'B':'A');
+  const topicFor=(side)=> side==='B' ? NTFY_TOPIC : OPP_NTFY_TOPIC;  // topics belong to teams: B=Bogey, A=Strike
   const snap={};
   for(const side of ['A','B']){ for(const p of rosterList(side)){ const k=norm(p); if(k in S.cutSnapshot) snap[k]=S.cutSnapshot[k]; } }
   const cfg={
     teamName:S.teams[mine].name, players:S.teams[mine].players,
     opponentName:S.teams[opp].name, opponentPlayers:S.teams[opp].players,
-    countBest:6, ntfyServer:'https://ntfy.sh', ntfyTopic:NTFY_TOPIC, notifyOnOpponentMove:false,
+    countBest:6, ntfyServer:'https://ntfy.sh', ntfyTopic:topicFor(mine), opponentTopic:topicFor(opp), notifyOnOpponentMove:false,
     weekend:{ locked:S.locked, starters:validStarters(mine), seventh:S.roster7[mine]||'',
               opponentStarters:validStarters(opp), opponentSeventh:S.roster7[opp]||'', cutSnapshot:snap }
   };
@@ -781,7 +782,8 @@ function readAvatar(file, cb){
 
 /* ---------------- ESPN sync ---------------- */
 const API='https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
-const NTFY_TOPIC='mmt-413ab7587a6e';   // your phone's alert channel (for the robot-config export)
+const NTFY_TOPIC='mmt-413ab7587a6e';       // your phone's alert channel
+const OPP_NTFY_TOPIC='mmt-9adac1ebf2a4';   // Trevor's alert channel (Strike Eagle)
 let syncing=false;
 async function sync(showToastMsg){
   if(S.sync!=='on'){ render(); return; }
