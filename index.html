@@ -593,24 +593,25 @@ function holeScorecard(l){
   if(!l || !l.perHole || !l.perHole.length) return '';
   const cell=(cls,txt,title)=>`<div class="hx-c ${cls}"${title?` title="${esc(title)}"`:''}>${txt}</div>`;
   const strips = l.perHole.map(r=>{
-    const H=r.holes; if(!H.length) return '';
-    const hasOut=H.length>=9, hasIn=H.length>=18;
+    const H=r.holes.slice().sort((a,b)=> (a.num||99)-(b.num||99)); // show in real hole-number order
+    if(!H.length) return '';
+    const complete=H.length>=18;
+    const sum=(arr,f)=>arr.reduce((a,h)=>a+(f(h)||0),0), strokesOf=h=>Number(h.strokes)||0;
     let numRow=cell('hx-lab','Hole'), parRow=cell('hx-lab','Par'), scRow=cell('hx-lab','Score');
-    let outP=0,outS=0,inP=0,inS=0;
     H.forEach((h,i)=>{
-      const n=i+1, cls=h.relN<0?'good':(h.relN>0?'bad':'');
+      const n=(h.num!=null?h.num:i+1), cls=h.relN<0?'good':(h.relN>0?'bad':'');
       numRow+=cell('hx-h',n);
       parRow+=cell('hx-p', h.par!=null?h.par:'–');
       scRow +=cell('hx-s '+cls, esc(h.strokes), 'Hole '+n+' · '+h.rel);
-      const st=Number(h.strokes)||0;
-      if(i<9){ outP+=h.par||0; outS+=st; } else { inP+=h.par||0; inS+=st; }
-      if(n===9 && hasOut){ numRow+=cell('hx-sub','OUT'); parRow+=cell('hx-sub',outP); scRow+=cell('hx-sub',outS); }
+      if(complete && i===8){ // after hole 9 in a finished round: OUT subtotal
+        numRow+=cell('hx-sub','OUT'); parRow+=cell('hx-sub',sum(H.slice(0,9),h=>h.par)); scRow+=cell('hx-sub',sum(H.slice(0,9),strokesOf));
+      }
     });
-    if(hasIn){
-      numRow+=cell('hx-sub','IN');  parRow+=cell('hx-sub',inP);        scRow+=cell('hx-sub',inS);
-      numRow+=cell('hx-sub hx-tot','TOT'); parRow+=cell('hx-sub hx-tot',outP+inP); scRow+=cell('hx-sub hx-tot',outS+inS);
+    if(complete){
+      numRow+=cell('hx-sub','IN');  parRow+=cell('hx-sub',sum(H.slice(9),h=>h.par));  scRow+=cell('hx-sub',sum(H.slice(9),strokesOf));
+      numRow+=cell('hx-sub hx-tot','TOT'); parRow+=cell('hx-sub hx-tot',sum(H,h=>h.par)); scRow+=cell('hx-sub hx-tot',sum(H,strokesOf));
     }
-    const thru = H.length>=18 ? 'final' : ('thru '+H.length);
+    const thru = complete ? 'final' : ('thru '+H.length);
     return `<div class="hx-round">
       <div class="hx-rlabel">Round ${r.round} <span class="${parClass(toNum(r.total))}">${esc(String(r.total))}</span> <span class="hx-thru">${thru}</span></div>
       <div class="hx-scroll"><div class="hx-grid">
@@ -904,23 +905,9 @@ function parseEvent(ev){
     if(!nm) continue;
     const cs=c.status||{};
     const cstate=cs.type?.state;
-    const live = cstate==='in';
-    const done = cstate==='post' || cs.type?.completed;
-    const thruNum = typeof cs.thru==='number' ? cs.thru : null;
-    let thru='';
-    if(thruNum!=null){ thru = thruNum>=18?'F':('Thru '+thruNum); }
-    else if(cs.thru!=null && cs.thru!=='') thru=String(cs.thru);
-    else if(cs.displayValue) thru=cs.displayValue;
-    else if(cs.type?.shortDetail) thru=cs.type.shortDetail;
-    // current hole: prefer ESPN's explicit field; else derive from start hole + holes played
-    // (The Open uses two-tee starts, so "thru N" is NOT always "on N+1" — only compute when we know the start hole)
-    const startHole = typeof cs.startHole==='number' ? cs.startHole : (typeof cs.teeHole==='number'? cs.teeHole : null);
-    let hole = (typeof cs.hole==='number') ? cs.hole : (typeof cs.currentHole==='number' ? cs.currentHole : null);
-    if(hole==null && startHole!=null && thruNum!=null && thruNum<18) hole = ((startHole-1+thruNum)%18)+1;
-    if(hole!=null && (hole<1||hole>18)) hole=null;
     const rounds=(c.linescores||[]).map(ls=> ls.displayValue||ls.value).filter(v=>v!==undefined&&v!==null&&v!=='');
     // per-hole scorecard — ESPN nests hole scores inside each round's linescores[].linescores[]
-    // each hole carries strokes (value/displayValue) + par-relative scoreType ("E","-1","+1"); par = strokes − relative
+    // each hole carries its real hole NUMBER (period), strokes, and par-relative scoreType ("E","-1","+1")
     const perHole=(c.linescores||[]).map(ls=>{
       const holes=(ls.linescores||[]).map(h=>{
         const strokes = (h.displayValue!=null&&h.displayValue!=='') ? String(h.displayValue) : (h.value!=null?String(h.value):'');
@@ -929,10 +916,31 @@ function parseEvent(ev){
         const relN = (rel==='E'||rel==='-') ? 0 : Number(rel);
         const sv = Number(h.value);
         const par = (!Number.isNaN(sv) && !Number.isNaN(relN)) ? sv - relN : null;
-        return { strokes, rel, relN: (Number.isNaN(relN)?0:relN), par };
+        return { num: (typeof h.period==='number'?h.period:null), strokes, rel, relN: (Number.isNaN(relN)?0:relN), par };
       }).filter(h=> h.strokes!=='');
       return { round: ls.period||0, total: (ls.displayValue!=null&&ls.displayValue!=='')?ls.displayValue:(ls.value!=null?ls.value:''), holes };
     }).filter(r=> r.holes.length);
+    // live / thru / current-hole — ESPN's status object is EMPTY for The Open, so derive it from holes played
+    let live = cstate==='in';
+    let done = cstate==='post' || cs.type?.completed;
+    let thruNum = typeof cs.thru==='number' ? cs.thru : null;
+    const startHole = typeof cs.startHole==='number' ? cs.startHole : (typeof cs.teeHole==='number'? cs.teeHole : null);
+    let hole = (typeof cs.hole==='number') ? cs.hole : (typeof cs.currentHole==='number' ? cs.currentHole : null);
+    if(hole==null && startHole!=null && thruNum!=null && thruNum<18) hole = ((startHole-1+thruNum)%18)+1;
+    if(perHole.length){
+      const cur=perHole[perHole.length-1], played=cur.holes.length;   // most recent round with holes
+      if(thruNum==null) thruNum = Math.min(played,18);
+      if(!live && !done){ if(played>=18) done=true; else if(played>0) live=true; }
+      if(hole==null && live && played>0 && played<18){
+        const lp=cur.holes[played-1].num;                             // real number of the last hole played
+        if(typeof lp==='number') hole=(lp%18)+1;                      // +1 wraps 18→1, correct for two-tee starts
+      }
+    }
+    if(hole!=null && (hole<1||hole>18)) hole=null;
+    let thru='';
+    if(thruNum!=null){ thru = thruNum>=18?'F':('Thru '+thruNum); }
+    else if(cs.displayValue) thru=cs.displayValue;
+    else if(cs.type?.shortDetail) thru=cs.type.shortDetail;
     const links=c.athlete?.links||[];
     const card=(links.find(l=>l.rel?.includes('playercard'))||links.find(l=>l.rel?.includes('stats'))||links[0]||{}).href||'';
     const pid = c.id || (card.match(/\/id\/(\d+)\//)||[])[1] || '';
