@@ -319,29 +319,33 @@
     <button data-sync="off">Manual entry</button>
   </div>
 
-  <div class="section-t" style="margin-left:16px" id="secA">Team A</div>
-  <div class="field"><label>Team name</label><input type="text" id="nameA"></div>
-  <div class="field"><label>Team photo</label>
-    <div class="photorow">
-      <div class="av-prev" id="prevA"></div>
-      <label class="btn ghost sm filepick">Choose photo<input type="file" accept="image/*" id="fileA" hidden></label>
-      <button class="btn ghost sm" id="rmA">Remove</button>
+  <div id="teamEditA">
+    <div class="section-t" style="margin-left:16px" id="secA">Team A</div>
+    <div class="field"><label id="photoLblA">Team photo</label>
+      <div class="photorow">
+        <div class="av-prev" id="prevA"></div>
+        <label class="btn ghost sm filepick">Choose photo<input type="file" accept="image/*" id="fileA" hidden></label>
+        <button class="btn ghost sm" id="rmA">Remove</button>
+      </div>
     </div>
+    <div class="field"><label>Team name</label><input type="text" id="nameA"></div>
+    <div id="rosterA"></div>
+    <button class="addbtn" data-add="A">＋ Add player</button>
   </div>
-  <div id="rosterA"></div>
-  <button class="addbtn" data-add="A">＋ Add player</button>
 
-  <div class="section-t" style="margin-left:16px" id="secB">Team B</div>
-  <div class="field"><label>Team name</label><input type="text" id="nameB"></div>
-  <div class="field"><label>Team photo</label>
-    <div class="photorow">
-      <div class="av-prev" id="prevB"></div>
-      <label class="btn ghost sm filepick">Choose photo<input type="file" accept="image/*" id="fileB" hidden></label>
-      <button class="btn ghost sm" id="rmB">Remove</button>
+  <div id="teamEditB">
+    <div class="section-t" style="margin-left:16px" id="secB">Team B</div>
+    <div class="field"><label id="photoLblB">Team photo</label>
+      <div class="photorow">
+        <div class="av-prev" id="prevB"></div>
+        <label class="btn ghost sm filepick">Choose photo<input type="file" accept="image/*" id="fileB" hidden></label>
+        <button class="btn ghost sm" id="rmB">Remove</button>
+      </div>
     </div>
+    <div class="field"><label>Team name</label><input type="text" id="nameB"></div>
+    <div id="rosterB"></div>
+    <button class="addbtn" data-add="B">＋ Add player</button>
   </div>
-  <div id="rosterB"></div>
-  <button class="addbtn" data-add="B">＋ Add player</button>
 
   <div style="height:18px"></div>
 </div>
@@ -915,8 +919,13 @@ function openSheet(){
   // label sections + toggle by real team names, and flag which is yours
   $('#secA').textContent = S.teams.A.name + (S.mine==='A' ? '  ★ yours' : '');
   $('#secB').textContent = S.teams.B.name + (S.mine==='B' ? '  ★ yours' : '');
+  $('#photoLblA').textContent = S.teams.A.name + ' — photo';
+  $('#photoLblB').textContent = S.teams.B.name + ' — photo';
   $('#mineA').textContent = S.teams.A.name;
   $('#mineB').textContent = S.teams.B.name;
+  // put YOUR team's edit block first so its photo picker is the one you reach
+  const eA=$('#teamEditA'), eB=$('#teamEditB'), parent=eA.parentNode;
+  if(S.mine==='B') parent.insertBefore(eB, eA); else parent.insertBefore(eA, eB);
   renderRoster('A'); renderRoster('B'); markRadios();
   renderPrev('A'); renderPrev('B');
   $('#sheetBg').classList.add('show'); $('#sheet').classList.add('show');
