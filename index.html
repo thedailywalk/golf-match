@@ -256,6 +256,19 @@
   .radio-row button.sel{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
   .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:60;pointer-events:none;box-shadow:var(--shadow)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Live commentary banner */
+  .cmt{position:fixed;left:0;right:0;top:0;z-index:90;display:flex;justify-content:center;padding:calc(8px + var(--safe-t)) 10px 0;pointer-events:none;transform:translateY(-135%);opacity:0;transition:transform .5s cubic-bezier(.15,.9,.2,1),opacity .4s}
+  .cmt.show{transform:translateY(0);opacity:1}
+  .cmt-inner{pointer-events:auto;max-width:600px;width:100%;display:flex;align-items:center;gap:11px;color:#fff;border-radius:15px;padding:11px 12px 11px 14px;box-shadow:0 14px 36px rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.14);border-left:4px solid var(--cmt-accent,#f4b740);position:relative;overflow:hidden;background:linear-gradient(135deg,#0c2036,#08182a)}
+  .cmt-inner::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 130% at 0% 0%, rgba(255,255,255,.10), transparent 55%);pointer-events:none}
+  .cmt-emoji{font-size:22px;flex:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+  .cmt-text{flex:1;font-weight:700;font-size:13.5px;line-height:1.32;letter-spacing:.1px;position:relative}
+  .cmt-x{flex:none;appearance:none;border:0;background:rgba(255,255,255,.14);color:#fff;width:26px;height:26px;border-radius:8px;font-size:13px;cursor:pointer;display:grid;place-items:center;position:relative}
+  .cmt-x:active{transform:scale(.9)}
+  .cmt-inner[data-team="A"]{--cmt-accent:#f4b740}
+  .cmt-inner[data-team="B"]{--cmt-accent:#2bd4c0}
+  @media (prefers-reduced-motion:reduce){ .cmt{transition:opacity .35s;transform:none} .cmt.show{transform:none} }
 </style>
 </head>
 <body>
@@ -369,6 +382,7 @@
   <div style="height:18px"></div>
 </div>
 
+<div class="cmt" id="commentary" aria-live="polite"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -876,6 +890,7 @@ async function sync(showToastMsg){
     detectChanges();
     $('#updated').textContent='Updated '+nowTime();
     render();
+    runCommentary();
     if(showToastMsg) toast('Synced · '+ (EVENT.name||''));
   }catch(e){
     toast('Couldn’t reach ESPN — retrying');
@@ -1056,6 +1071,126 @@ function commitNames(){ S.teams.A.name=$('#nameA').value||'Team A'; S.teams.B.na
 let toastT;
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2400); }
 function nowTime(){ const d=new Date(); return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}); }
+
+/* ================= Live commentary ================= */
+/* Personas — puns swap in by team name; falls back to a generic voice for any renamed team. */
+const PERSONAS = {
+  eagle: { key:'eagle', emoji:'🦅', names:['Strike Eagles','the Eagles','the Strike Eagles'], lines:{
+    birdie:["{team} just launched a missile off the tee. 🚀","{team} are absolutely cooking today.","{team} are making this look unfair.","{team} just drained a birdie like it owed them money.","{team} are soaring above the competition.","{team} spotted a birdie and simply took it. Rude.","Wingspan? Elite. {team} just glided into red numbers.","{team} are flying now — somebody hide the leaderboard.","{team} made par look like a personal insult.","That birdie from {team} had no business being that clean.","{team} are treating this course like a personal driving range.","Talons out — {team} just snatched another shot back.","{team} are officially up to something.","{team}'s {player} just birdied and made it look boring."],
+    eagle:["EAGLE. {team} just did something illegal in several states. 🦅","{team} went and got an eagle because a birdie felt too humble.","Somebody check the rulebook — {team} might be cheating. (They're not. Probably.)","{team} just eagled and the entire field felt that.","An EAGLE for {team}. Framed it. Hung it on the wall. Iconic.","{team} aren't soaring anymore — they're in orbit. 🚀"],
+    bogey:["{team} have temporarily misplaced their golf game.","{team} just donated another stroke to the field. Very charitable.","{team} may want to pretend that hole never happened.","Someone check if {team} remembered which sport they're playing.","{team} clipped a wing on that one. Ouch.","That hole flew away from {team}. Migration season, apparently.","{team} found trouble like it was on their itinerary.","Even eagles have off days — {team} just proved it.","{team} gave that stroke back with a bow on it."],
+    double:["{team} just posted a number we're legally not allowed to say out loud.","{team} turned a golf hole into a full crime scene. 🚨","That wasn't a bogey, that was a group project gone wrong for {team}.","{team} just carded a big one and the scorecard filed a complaint.","Grounded. {team} clipped both wings on that one.","{team}'s {player} found a new and creative way to lose shots."],
+    streak:["{team} are on a HEATER — {streak} under par in a row. 🔥","Nobody tell {team} to calm down. {streak} straight. Unreal.","{team} found a cheat code and refuse to share it. {streak} in a row."],
+    cold:["{team} have gone quiet. Suspiciously quiet.","{team} are stuck in a holding pattern up there.","Turbulence for {team} — a couple of bumpy holes."],
+    leadTake:["NEW LEADER: {team} have taken control by {diff}. The nerve. 🦅","{team} just snatched the lead right out of {opp}'s hands.","And just like that, {team} are in front. {opp}, your move.","{team} climbed to the top and kicked the ladder away. Up {diff}."],
+    leadChange:["{team} are back in front by {diff}. This lead has trust issues.","Lead change! {team} retake it. {opp} did not see the talons coming.","{team} flipped it — up {diff} and feeling smug."],
+    blowout:["{team} are up {diff} and this is starting to feel personal.","It's not a lead anymore, it's a lifestyle. {team} by {diff}.","{team} are making this look unfair. Someone call an official."],
+    close:["{team} lead by a single shot — do not blink. 👀","One stroke, {team}. That's the whole margin. Breathe."],
+    comeback:["{team} were left for dead and are somehow airborne again. 🦅","The great {team} comeback is officially underway.","Down bad, now back — {team} refuse to read the room."],
+    finish:["{player} signs for {team} and struts to the clubhouse. 🦅","{team}'s {player} is in the house. Feet up, mission complete."] }},
+  shark: { key:'shark', emoji:'🦈✨', names:['Sparkle Sharks','Bogey Birds','the Sharks','the Sparkle Sharks','the Bogey Birds'], lines:{
+    birdie:["{team} smell blood in the water. 🦈","{team} are circling the leaderboard.","{team} are putting on a clinic.","{team} just made waves — birdie, baby.","{team} woke up and chose violence. ✨","{team} just stole the spotlight.","Fins up — {team} are feasting today.","{team} sparkled that one right into the cup. ✨","{team} are hunting birdies like it's Shark Week.","{team} just bit a chunk out of par.","The water's glittering and so is {team}'s scorecard.","{team} are dangerous today. Everybody out of the water.","{team}'s {player} just birdied and winked at the camera."],
+    eagle:["EAGLE for {team}?? The sharks have grown WINGS. 🦈🦅","{team} just went full apex predator. An eagle. Terrifying.","{team} sparkled SO hard it turned into an eagle. ✨","{team} smelled blood and swallowed the whole hole. Eagle."],
+    bogey:["{team} just sprinkled a little chaos onto the scorecard. ✨","{team} are collecting bogeys like they're Pokémon.","{team} are sparkling... the golf? Questionable.","{team} took a nibble out of par and par bit back.","{team} beached themselves on that hole. Somebody help them.","Even sharks get seasick — {team} just proved it."],
+    double:["{team} just chummed the water with their own scorecard.","{team} turned that hole into a feeding frenzy — on themselves.","That was less 'shark,' more 'goldfish' from {team}. 🐠","{team} sparkled straight into a hazard. ✨💦","{team}'s {player} found the deep end and stayed there."],
+    streak:["{team} are on a feeding frenzy — {streak} birdies in a row. 🦈🔥","The water is BOILING. {team} can't be stopped. {streak} straight.","{team} are sparkling AND biting. {streak} in a row. ✨"],
+    cold:["{team} have drifted into calmer, colder water.","{team} have gone dim — the sparkle's on standby.","A couple of choppy holes for {team}."],
+    leadTake:["NEW LEADER: {team} just surfaced in front by {diff}. 🦈","{team} circled, struck, and stole the lead from {opp}.","{team} are on top now — {opp}, mind the fin.","The sharks are leading and NOT throwing it back. Up {diff}."],
+    leadChange:["{team} are back on top by {diff}. Sparkly and merciless. ✨","Lead change! {team} bite it back. {opp} felt that one.","{team} flipped it — up {diff}, fins fully deployed."],
+    blowout:["{team} are up {diff} and the water isn't even fair anymore.","This isn't a lead, it's a food chain. {team} by {diff}. 🦈","{team} are up {diff} and sparkling insufferably. ✨"],
+    close:["{team} lead by one shimmering little stroke. ✨ Hold on tight.","One shot, {team}. The tank is this close to tipping."],
+    comeback:["{team} were sinking and somehow started sparkling again. ✨🦈","Do NOT count out the sharks. {team} are back in the water.","Left for chum, now surging — {team} love the drama."],
+    finish:["{player} signs for {team} and swims off into the sunset. 🌅","{team}'s {player} is done and dry. Clubhouse secured."] }}
+};
+const CMT_GENERIC = {
+  birdie:["{team} just picked up a shot on the field.","Red number for {team}. 🔴","{team} are trending the right way.","Tidy birdie from {team}."],
+  eagle:["An EAGLE for {team}! Enormous. 🦅"],
+  bogey:["{team} gave one back to the course.","{team} found a bogey they weren't looking for.","Rough patch for {team} there."],
+  double:["{team} took a big number. Deep breaths.","That hole got the better of {team}."],
+  streak:["{team} are heating up — {streak} in a row. 🔥"],
+  cold:["Quiet stretch for {team}."],
+  leadTake:["{team} grab the lead by {diff}.","{team} move to the front by {diff}."],
+  leadChange:["Lead change — {team} back in front by {diff}."],
+  blowout:["{team} are pulling away — up by {diff}."],
+  close:["Nailbiter. {team} up by just {diff}. 😬"],
+  comeback:["{team} are storming back into this."],
+  finish:["{player} finishes the round for {team}."],
+  filler:["Match check: {team} vs {opp}, still very much alive.","We're told golf is, in fact, still happening.","Somewhere a golf ball is having a worse day than you.","It's not about the score — it's about the friends we roasted along the way.","Live golf: 10% skill, 90% blaming the wind.","{team} continue to exist on the leaderboard. Bold.","Neither {team} nor {opp} has quit yet. Respect."]
+};
+function personaFor(side){
+  const nm=(S.teams[side]?.name)||'';
+  if(/eagle/i.test(nm)) return PERSONAS.eagle;
+  if(/shark|sparkle|bogey|bird/i.test(nm)) return PERSONAS.shark;
+  const clean=nm.replace(/[^\w\s'&-]/g,'').trim()||('Team '+side);
+  return { key:'g'+side, emoji:'⛳', names:[clean], lines:{} };
+}
+const cmtBags={};
+function cmtPick(arr,key){ if(!arr.length) return ''; let b=cmtBags[key]; if(!b||!b.length){ b=cmtBags[key]=[...arr.keys()]; for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } } return arr[b.pop()]; }
+function cmtLine(persona,cat){ const arr=[...((persona.lines&&persona.lines[cat])||[]), ...((CMT_GENERIC[cat])||[])]; return cmtPick(arr, persona.key+':'+cat) || cmtPick(CMT_GENERIC.filler,'g:filler'); }
+function cmtRender(tpl,ctx){ return tpl.replace(/\{(\w+)\}/g,(m,k)=> ctx[k]!=null&&ctx[k]!==''?ctx[k]:(k==='diff'?'a bit':m)); }
+function cmtName(p){ return p.names[Math.floor(Math.random()*p.names.length)]; }
+
+let cmtQueue=[], cmtActive=false, cmtTimer=null;
+function cmtEnqueue(item){ if(item.text) item.text=item.text.charAt(0).toUpperCase()+item.text.slice(1); cmtQueue.push(item); if(cmtQueue.length>4) cmtQueue.length=4; if(!cmtActive) cmtNext(); }
+function cmtNext(){
+  const el=$('#commentary'); if(!el) return;
+  if(!cmtQueue.length){ cmtActive=false; return; }
+  cmtActive=true; const it=cmtQueue.shift();
+  el.innerHTML=`<div class="cmt-inner" data-team="${it.side||''}"><span class="cmt-emoji">${it.emoji||'⛳'}</span><span class="cmt-text">${esc(it.text)}</span><button class="cmt-x" aria-label="Dismiss">✕</button></div>`;
+  el.querySelector('.cmt-x').onclick=cmtDismiss;
+  requestAnimationFrame(()=> el.classList.add('show'));
+  clearTimeout(cmtTimer); cmtTimer=setTimeout(cmtDismiss, it.dur||4600);
+}
+function cmtDismiss(){ const el=$('#commentary'); if(!el) return; el.classList.remove('show'); clearTimeout(cmtTimer); setTimeout(()=>{ cmtActive=false; cmtNext(); }, 430); }
+
+/* event engine — compares each sync to a snapshot and narrates what actually happened */
+let cmtPrev=null;
+function cmtFlatHoles(l){ return (l&&l.perHole||[]).flatMap(r=>r.holes); }
+function cmtSnapshot(){
+  const snap={players:{}, A:teamTotal('A'), B:teamTotal('B')};
+  for(const side of ['A','B']) for(const p of S.teams[side].players){
+    const l=LIVE[norm(p)]; if(!l) continue;
+    snap.players[norm(p)]={ holes:cmtFlatHoles(l).length, side, name:p };
+  }
+  return snap;
+}
+function cmtLeader(s){ const a=s.A,b=s.B; if(!a.counted||!b.counted) return {side:null,diff:0}; if(a.sum===b.sum) return {side:'tie',diff:0}; return {side:a.sum<b.sum?'A':'B', diff:Math.abs(a.sum-b.sum)}; }
+function runCommentary(){
+  if(S.sync!=='on'){ return; }
+  const snap=cmtSnapshot();
+  if(!cmtPrev){ cmtPrev=snap; return; }             // baseline: no spam on first load
+  const evs=[];
+  for(const nm in snap.players){
+    const cur=snap.players[nm], prev=cmtPrev.players[nm];
+    if(!prev || cur.holes<=prev.holes) continue;      // only when a new hole is completed
+    const flat=cmtFlatHoles(LIVE[nm]); const h=flat[flat.length-1]; if(!h) continue;
+    const rel=h.relN, side=cur.side, player=cur.name.split(' ').slice(-1)[0];
+    let streak=0; for(let i=flat.length-1;i>=0;i--){ if(flat[i].relN<0) streak++; else break; }
+    if(rel<=-2) evs.push({pri:10,cat:'eagle',side,player});
+    else if(rel===-1) evs.push(streak>=3?{pri:7,cat:'streak',side,player,streak}:{pri:5,cat:'birdie',side,player});
+    else if(rel===1) evs.push({pri:4,cat:'bogey',side,player});
+    else if(rel>=2) evs.push({pri:8,cat:'double',side,player});
+    if(cur.holes>0 && cur.holes%18===0) evs.push({pri:3,cat:'finish',side,player});
+  }
+  const pL=cmtLeader(cmtPrev), cL=cmtLeader(snap);
+  if(cL.side==='A'||cL.side==='B'){
+    if(pL.side!==cL.side && pL.side!=null){
+      evs.push({pri:9, cat: pL.side==='tie'?'leadTake':'leadChange', side:cL.side, diff:cL.diff});
+    } else if(pL.side===cL.side){
+      if(cL.diff>=6 && pL.diff<6) evs.push({pri:6,cat:'blowout',side:cL.side,diff:cL.diff});
+      else if(cL.diff===1 && pL.diff!==1) evs.push({pri:2,cat:'close',side:cL.side,diff:1});
+    }
+  }
+  if(!evs.length && Math.random()<0.14) evs.push({pri:1,cat:'filler',side:Math.random()<0.5?'A':'B'});
+  evs.sort((a,b)=>b.pri-a.pri);
+  for(const ev of evs.slice(0,2)){
+    const persona=personaFor(ev.side), opp=personaFor(ev.side==='A'?'B':'A');
+    const ctx={ team:cmtName(persona), emoji:persona.emoji, opp:cmtName(opp), player:ev.player||'', diff:(ev.diff!=null?ev.diff:''), streak:(ev.streak!=null?ev.streak:'') };
+    const line=cmtLine(persona, ev.cat);
+    if(line) cmtEnqueue({ text:cmtRender(line,ctx), emoji:persona.emoji, side:ev.side });
+  }
+  cmtPrev=snap;
+}
 
 /* ---------------- Wire up ---------------- */
 $('#syncBtn').onclick=()=> sync(true);
