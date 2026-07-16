@@ -307,10 +307,10 @@
   <div class="grip"></div>
   <div class="sheet-h"><div class="t">Edit match</div><button class="btn ghost sm" id="doneBtn">Done</button></div>
 
-  <div class="section-t" style="margin-left:16px">Which team is yours?</div>
+  <div class="section-t" style="margin-left:16px">Which team is yours? (this phone)</div>
   <div class="radio-row" id="mineRadio">
-    <button data-mine="A">Team A</button>
-    <button data-mine="B">Team B</button>
+    <button data-mine="A" id="mineA">Team A</button>
+    <button data-mine="B" id="mineB">Team B</button>
   </div>
 
   <div class="section-t" style="margin-left:16px">Live Sync</div>
@@ -319,7 +319,7 @@
     <button data-sync="off">Manual entry</button>
   </div>
 
-  <div class="section-t" style="margin-left:16px">Team A</div>
+  <div class="section-t" style="margin-left:16px" id="secA">Team A</div>
   <div class="field"><label>Team name</label><input type="text" id="nameA"></div>
   <div class="field"><label>Team photo</label>
     <div class="photorow">
@@ -331,7 +331,7 @@
   <div id="rosterA"></div>
   <button class="addbtn" data-add="A">＋ Add player</button>
 
-  <div class="section-t" style="margin-left:16px">Team B</div>
+  <div class="section-t" style="margin-left:16px" id="secB">Team B</div>
   <div class="field"><label>Team name</label><input type="text" id="nameB"></div>
   <div class="field"><label>Team photo</label>
     <div class="photorow">
@@ -912,6 +912,11 @@ function setNotifyState(on){
 /* ---------------- Edit sheet ---------------- */
 function openSheet(){
   $('#nameA').value=S.teams.A.name; $('#nameB').value=S.teams.B.name;
+  // label sections + toggle by real team names, and flag which is yours
+  $('#secA').textContent = S.teams.A.name + (S.mine==='A' ? '  ★ yours' : '');
+  $('#secB').textContent = S.teams.B.name + (S.mine==='B' ? '  ★ yours' : '');
+  $('#mineA').textContent = S.teams.A.name;
+  $('#mineB').textContent = S.teams.B.name;
   renderRoster('A'); renderRoster('B'); markRadios();
   renderPrev('A'); renderPrev('B');
   $('#sheetBg').classList.add('show'); $('#sheet').classList.add('show');
@@ -920,6 +925,9 @@ function closeSheet(){ $('#sheetBg').classList.remove('show'); $('#sheet').class
 function markRadios(){
   document.querySelectorAll('#mineRadio button').forEach(b=> b.classList.toggle('sel', b.dataset.mine===S.mine));
   document.querySelectorAll('#syncRadio button').forEach(b=> b.classList.toggle('sel', b.dataset.sync===S.sync));
+  const sA=$('#secA'), sB=$('#secB');
+  if(sA) sA.textContent = S.teams.A.name + (S.mine==='A'?'  ★ yours':'');
+  if(sB) sB.textContent = S.teams.B.name + (S.mine==='B'?'  ★ yours':'');
 }
 function renderRoster(side){
   const host=$('#roster'+side); host.innerHTML='';
