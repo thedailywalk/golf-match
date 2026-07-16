@@ -20,6 +20,7 @@
   "countBest": 6,
   "ntfyServer": "https://ntfy.sh",
   "ntfyTopic": "mmt-413ab7587a6e",
+  "opponentTopic": "mmt-9adac1ebf2a4",
   "notifyOnOpponentMove": false,
   "weekend": {
     "locked": false,

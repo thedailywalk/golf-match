@@ -72,15 +72,32 @@ function totalFor(which, live) {
     : bestNTotal(cfg.opponentPlayers, live, cfg.countBest);
 }
 
-async function push(title, body, tags, priority) {
-  const url = `${cfg.ntfyServer.replace(/\/$/, '')}/${cfg.ntfyTopic}`;
+async function push(topic, title, body, tags, priority) {
+  if (!topic) return;
+  const url = `${cfg.ntfyServer.replace(/\/$/, '')}/${topic}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Title': title, 'Tags': tags || 'golf', 'Priority': String(priority || 'default'), 'Content-Type': 'text/plain; charset=utf-8' },
     body
   });
   if (!res.ok) throw new Error(`ntfy ${res.status}`);
-  console.log('pushed:', title, '/', body);
+  console.log(`pushed[${topic}]:`, title, '/', body);
+}
+
+// One entry per phone/subscriber, each seeing THEIR team as "mine".
+function recipients() {
+  const r = [{
+    topic: cfg.ntfyTopic, name: cfg.teamName, players: cfg.players, seventh: wk.seventh, starters: wk.starters,
+    oppName: cfg.opponentName, oppPlayers: cfg.opponentPlayers, oppSeventh: wk.opponentSeventh, oppStarters: wk.opponentStarters
+  }];
+  if (cfg.opponentTopic) r.push({
+    topic: cfg.opponentTopic, name: cfg.opponentName, players: cfg.opponentPlayers, seventh: wk.opponentSeventh, starters: wk.opponentStarters,
+    oppName: cfg.teamName, oppPlayers: cfg.players, oppSeventh: wk.seventh, oppStarters: wk.starters
+  });
+  return r;
+}
+function totalOf(players, seventh, starters, live) {
+  return weekend ? weekendTotal(players, seventh, starters, wk.cutSnapshot || {}, live) : bestNTotal(players, live, cfg.countBest);
 }
 
 (async () => {
@@ -98,69 +115,61 @@ async function push(title, body, tags, priority) {
   const prev = await loadState();
   const next = { event: evName, round, players: {}, lockReminded: prev.lockReminded, finalSent: prev.finalSent };
 
-  // which players' moves are "relevant" (count toward the total right now)
-  const myRoster = weekend && wk.seventh ? [...cfg.players, wk.seventh] : cfg.players;
-  const oppRoster = weekend && wk.opponentSeventh ? [...cfg.opponentPlayers, wk.opponentSeventh] : cfg.opponentPlayers;
-  const relevantMine = new Set((weekend ? (wk.starters || []) : cfg.players).map(norm));
-  const relevantOpp = new Set((weekend ? (wk.opponentStarters || []) : cfg.opponentPlayers).map(norm));
-
-  const moves = [];
-  const track = (roster, isMine) => {
-    for (const p of roster) {
-      const k = norm(p); const l = live[k]; if (!l || l.toPar == null) continue;
-      next.players[k] = l.toPar;
-      const before = prev.players?.[k];
-      const relevant = isMine ? relevantMine.has(k) : (cfg.notifyOnOpponentMove && relevantOpp.has(k));
-      if (before !== undefined && before !== l.toPar && relevant)
-        moves.push({ name: l.name || p, from: before, to: l.toPar, delta: l.toPar - before, mine: isMine, thru: l.thru });
-    }
-  };
-  track(myRoster, true);
-  track(oppRoster, false);
-
-  const myTot = totalFor('mine', live);
-  const oppTot = totalFor('opp', live);
-  const margin = oppTot - myTot; // >0 => you lead
-  const standing = margin === 0 ? 'all square' : margin > 0 ? `leading by ${margin}` : `trailing by ${-margin}`;
-
+  // snapshot every tracked player's current score (for change detection next run)
+  const allPlayers = [...cfg.players, ...cfg.opponentPlayers, wk.seventh, wk.opponentSeventh].filter(Boolean);
+  for (const p of allPlayers) { const k = norm(p); const l = live[k]; if (l && l.toPar != null) next.players[k] = l.toPar; }
   await saveState(next);
 
   // First run just seeds state (no spam)
   if (prev.players === undefined) { console.log('seeded state, no alert on first run'); return; }
 
-  // Weekend has begun but the lineup isn't locked in config yet — nudge once.
+  // Weekend has begun but the lineup isn't locked in config yet — nudge the manager once.
   if (round >= 3 && !weekend && !prev.lockReminded) {
     next.lockReminded = true; await saveState(next);
-    await push('🔒 Lock your weekend lineup',
+    await push(cfg.ntfyTopic, '🔒 Lock your weekend lineup',
       `${evName}: the cut is in. In the app, set your 4 starters, tap Lock, then "Copy robot config" → paste into robot/config.json so the weekend scores correctly.`,
       'lock,golf', 'high');
     return;
   }
 
-  // Final wrap-up (once)
-  if (state === 'post' && !prev.finalSent) {
-    next.finalSent = true; await saveState(next);
-    const won = margin > 0, tie = margin === 0;
-    await push(
-      `${cfg.teamName} ${pretty(myTot)} — ${won ? 'WIN 🏆' : tie ? 'TIED 🤝' : 'lost'}`,
-      `${evName} final\n${cfg.teamName} ${pretty(myTot)} vs ${cfg.opponentName} ${pretty(oppTot)}`,
-      won ? 'trophy,golf' : 'golf', won ? 'high' : 'default'
-    );
-    return;
+  const finalNow = (state === 'post' && !prev.finalSent);
+  if (finalNow) { next.finalSent = true; await saveState(next); }
+
+  // Push each subscriber their OWN team's update, on their OWN topic
+  for (const r of recipients()) {
+    const myTot = totalOf(r.players, r.seventh, r.starters, live);
+    const oppTot = totalOf(r.oppPlayers, r.oppSeventh, r.oppStarters, live);
+    const margin = oppTot - myTot; // >0 => this recipient leads
+    const standing = margin === 0 ? 'all square' : margin > 0 ? `leading by ${margin}` : `trailing by ${-margin}`;
+
+    if (finalNow) {
+      const won = margin > 0, tie = margin === 0;
+      await push(r.topic, `${r.name} ${pretty(myTot)} — ${won ? 'WIN 🏆' : tie ? 'TIED 🤝' : 'lost'}`,
+        `${evName} final\n${r.name} ${pretty(myTot)} vs ${r.oppName} ${pretty(oppTot)}`,
+        won ? 'trophy,golf' : 'golf', won ? 'high' : 'default');
+      continue;
+    }
+
+    // this recipient's relevant movers (their starters on the weekend, all 6 in R1–2)
+    const roster = (weekend && r.seventh) ? [...r.players, r.seventh] : r.players;
+    const relevant = new Set((weekend ? (r.starters || []) : r.players).map(norm));
+    const moves = [];
+    for (const p of roster) {
+      const k = norm(p); const l = live[k]; if (!l || l.toPar == null) continue;
+      const before = prev.players?.[k];
+      if (before !== undefined && before !== l.toPar && relevant.has(k))
+        moves.push({ name: l.name || p, to: l.toPar, delta: l.toPar - before, thru: l.thru });
+    }
+    if (!moves.length) continue;
+
+    moves.sort((a, b) => a.delta - b.delta);
+    const best = moves[0];
+    const verb = best.delta <= -2 ? 'eagle! 🦅' : best.delta === -1 ? 'birdie 🐦' : best.delta === 1 ? 'bogey' : best.delta >= 2 ? 'double+' : 'move';
+    const arrow = best.delta < 0 ? '▼' : '▲';
+    const last = best.name.split(' ').slice(-1)[0];
+    await push(r.topic, `${r.name} ${pretty(myTot)} · ${standing}`,
+      `${last} ${arrow}${Math.abs(best.delta)} ${verb}${best.thru ? ' · ' + best.thru : ''}\nnow ${pretty(best.to)}${moves.length > 1 ? `  (+${moves.length - 1} more moved)` : ''}`,
+      best.delta < 0 ? 'golf,chart_with_downwards_trend' : 'golf',
+      best.delta <= -2 ? 'high' : 'default');
   }
-
-  if (!moves.length) { console.log('no relevant changes'); return; }
-
-  const mine = moves.filter((m) => m.mine).sort((a, b) => a.delta - b.delta);
-  const best = mine[0] || moves.sort((a, b) => a.delta - b.delta)[0];
-  const verb = best.delta <= -2 ? 'eagle! 🦅' : best.delta === -1 ? 'birdie 🐦' : best.delta === 1 ? 'bogey' : best.delta >= 2 ? 'double+' : 'move';
-  const arrow = best.delta < 0 ? '▼' : '▲';
-  const last = best.name.split(' ').slice(-1)[0];
-
-  await push(
-    `${cfg.teamName} ${pretty(myTot)} · ${standing}`,
-    `${last} ${arrow}${Math.abs(best.delta)} ${verb}${best.thru ? ' · ' + best.thru : ''}\nnow ${pretty(best.to)}${mine.length > 1 ? `  (+${mine.length - 1} more moved)` : ''}`,
-    best.delta < 0 ? 'golf,chart_with_downwards_trend' : 'golf',
-    best.delta <= -2 ? 'high' : 'default'
-  );
 })().catch((e) => { console.error('robot error:', e.message); process.exit(0); });
