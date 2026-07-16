@@ -100,9 +100,9 @@
   .team-h .nm{font-weight:800;font-size:15px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .team-h .tot{font-size:20px;font-weight:900}
   .team-h .mine-star{font-size:12px;color:var(--gold)}
-  .cols{display:grid;grid-template-columns:24px 1fr auto;gap:0;padding:6px 12px 2px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--line)}
+  .cols{display:grid;grid-template-columns:40px 1fr auto;gap:0;padding:6px 12px 2px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--line)}
   .cols .r{text-align:right}
-  .player{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:0;padding:11px 12px;border-bottom:1px solid var(--line)}
+  .player{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:0;padding:11px 12px;border-bottom:1px solid var(--line)}
   .player:last-child{border-bottom:0}
   .player.benched{opacity:.42}
   .chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;cursor:pointer;background:transparent;font-size:12px;color:#fff}
@@ -117,6 +117,31 @@
   .dotlive{width:7px;height:7px;border-radius:50%;background:var(--bad);display:inline-block;animation:pulse 1.8s infinite}
 
   .rulenote{padding:9px 14px 13px;font-size:11px;color:var(--muted);text-align:center}
+
+  /* Weekend lineup */
+  .chk.static{opacity:.5;cursor:default}
+  .chk.mc-x{background:transparent;border-color:var(--bad);color:var(--bad);cursor:not-allowed;font-weight:800}
+  .mc{color:var(--bad);font-weight:800}
+  .pill7{display:inline-block;font-size:9px;font-weight:800;background:var(--gold);color:#3a2a00;border-radius:5px;padding:1px 5px;margin-right:4px;letter-spacing:.4px;vertical-align:middle}
+  .seventh{display:flex;gap:8px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line);font-size:13px}
+  .seventh .sev-in{flex:1;min-width:0;font-size:14px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--text)}
+  .seventh.locked{color:var(--muted)}
+  .wk-status{padding:9px 12px;font-size:12px;font-weight:800;text-align:center;border-bottom:1px solid var(--line)}
+  .wk-status.ok{color:var(--good)}
+  .wk-status.warn{color:var(--bad)}
+  .wkbanner{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+  .wkbanner.slim{display:flex;align-items:center;gap:12px;justify-content:space-between;font-size:12px;color:var(--muted);padding:12px 14px}
+  .wkb-top{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800}
+  .wkb-lock{font-size:12px;font-weight:800;color:var(--gold)}
+  .wkb-sub{font-size:12px;color:var(--muted);margin:6px 0 11px;line-height:1.45}
+  .wkb-actions{display:flex;gap:8px}
+
+  /* Who's phone is this */
+  #whoami{display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 11px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+  .whoami-label{font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+  .whoami-seg{display:flex;gap:6px;flex:1;min-width:0}
+  .whoami-seg button{flex:1;min-width:0;padding:9px 8px;border-radius:9px;border:1px solid var(--line);background:var(--paper);color:var(--muted);font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .whoami-seg button.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
 
   /* Tabs */
   .tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:5px;margin-top:14px;box-shadow:var(--shadow)}
@@ -139,6 +164,10 @@
   .pd-round span{font-size:10px;color:var(--muted);font-weight:800}
   .pd-round b{font-size:16px;font-weight:800}
   .pd-empty{color:var(--muted);font-size:12px;padding:4px 0 10px}
+  .pd-cutbtns{display:flex;gap:8px;margin-bottom:11px}
+  .cutbtn{flex:1;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--muted);font-weight:800;font-size:12px;cursor:pointer}
+  .cutbtn.sel{background:var(--good);color:#04180b;border-color:var(--good)}
+  .cutbtn.miss.sel{background:var(--bad);color:#fff;border-color:var(--bad)}
   .pd-link{display:inline-block;font-size:12px;font-weight:800;color:var(--navy);text-decoration:none;border:1px solid var(--line);border-radius:9px;padding:8px 12px}
 
   /* Leaderboard (card style) */
@@ -154,6 +183,7 @@
   .lb-init{position:absolute;inset:0;display:grid;place-items:center;border-radius:13px;background:var(--navy);color:#fff;font-weight:800;font-size:15px}
   .lb-photo{position:absolute;inset:0;width:52px;height:52px;border-radius:13px;object-fit:cover;object-position:top center;background:var(--paper);border:1px solid var(--line)}
   .lb-num{position:absolute;top:-7px;left:-7px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--card);z-index:2}
+  .lb-num.cut{background:var(--bad);font-size:9px}
   .lb-id{min-width:0}
   .lb-nm{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lb-sub{margin-top:4px}
@@ -231,6 +261,8 @@
     <button class="tab" data-view="board">🏆 Leaderboard</button>
   </div>
 
+  <div id="whoami"></div>
+
   <div id="matchView">
   <!-- Match summary -->
   <div class="summary">
@@ -260,6 +292,7 @@
     </div>
   </div>
 
+  <div id="weekendBanner"></div>
   <div id="teams"></div>
   </div><!-- /matchView -->
 
@@ -323,12 +356,18 @@ const DEFAULT = {
   mine: 'B',                // Princess Lulu
   sync: 'on',
   teams: {
-    A: { name: 'Strike Eagle', players: ['Rory McIlroy','Collin Morikawa','Tyrrell Hatton','Xander Schauffele','Russell Henley','Chris Gotterup'] },
+    A: { name: 'Strike Eagle 🦅', players: ['Rory McIlroy','Collin Morikawa','Tyrrell Hatton','Xander Schauffele','Russell Henley','Chris Gotterup'] },
     B: { name: 'Bogey Bird Sparkle Shark', players: ['Scottie Scheffler','Tommy Fleetwood','Matt Fitzpatrick','Jon Rahm','Wyndham Clark','Ludvig Åberg'] }
   },
   bench: {},                // "A:Rory McIlroy" -> true (benched, doesn't count)
   manual: {},               // "A:Rory McIlroy" -> "-2"  (used when sync off)
-  avatars: { A: '', B: '' } // team photos, stored as compressed data URLs
+  avatars: { A: '', B: '' },// team photos, stored as compressed data URLs
+  roster7: { A:'', B:'' },  // optional 7th weekend player (must have made the cut)
+  startWknd: { A:[], B:[] },// chosen weekend starters (max 4 per team)
+  locked: false,            // weekend lineups locked after Friday
+  planWknd: false,          // reveal the weekend lineup editor early
+  cutSnapshot: {},          // norm name -> to-par snapshot taken at lock (through R2)
+  cutOverride: {}           // norm name -> 'made' | 'missed' (manual override of ESPN)
 };
 let S = load();
 function load(){ try{ return Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(LS)||'{}')); }catch(e){ return structuredClone(DEFAULT); } }
@@ -360,17 +399,74 @@ function playerScore(side,name){
 function playerLive(name){ return LIVE[norm(name)] || null; }
 function isBench(side,name){ return !!S.bench[key(side,name)]; }
 
-/* team total = sum of counting (non-benched) players with a score */
+/* ---- roster / weekend rules ---- */
+function splitKey(k){ const i=k.indexOf(':'); return [k.slice(0,i), k.slice(i+1)]; }
+function rosterList(side){ const a=S.teams[side].players.slice(); const s7=S.roster7?.[side]; if(s7) a.push(s7); return a; }
+function weekendPlanning(){ return S.locked || (EVENT.round||0)>=2 || S.planWknd; }
+function weekendScoring(){ return S.locked; }               // the Friday lock is what switches scoring
+function cutOf(name){ const k=norm(name); if(S.cutOverride&&S.cutOverride[k]) return S.cutOverride[k]; return LIVE[k]?.cutStatus || null; }   // manual override wins, else ESPN
+function setCut(name, val){ const k=norm(name); if(S.cutOverride[k]===val){ delete S.cutOverride[k]; } else { S.cutOverride[k]=val; } save(); render(); }
+function isStarterChosen(side,name){ return (S.startWknd[side]||[]).includes(name); }
+function validStarters(side){ const roster=rosterList(side); return (S.startWknd[side]||[]).filter(p=> roster.includes(p) && cutOf(p)!=='missed').slice(0,4); }
+
+/* team total — R1–2: all 6 count · weekend (locked): all-6-through-cut + 4 starters' weekend + penalties */
 function teamTotal(side){
-  let sum=0, counted=0;
-  for(const p of S.teams[side].players){
-    if(isBench(side,p)) continue;
-    const s = playerScore(side,p);
-    if(s===null) continue;
-    sum+=s; counted++;
+  const orig = S.teams[side].players;
+  if(S.sync==='off'){                     // manual mode stays simple
+    let sum=0, counted=0;
+    for(const p of orig){ if(isBench(side,p)) continue; const s=playerScore(side,p); if(s===null) continue; sum+=s; counted++; }
+    return { sum, counted, penalty:0, starters:counted, mode:'manual' };
   }
-  return { sum, counted };
+  if(!weekendScoring()){                   // Rounds 1–2: all 6 players count
+    let sum=0, counted=0;
+    for(const p of orig){ const s=playerScore(side,p); if(s===null) continue; sum+=s; counted++; }
+    return { sum, counted, penalty:0, starters:counted, mode:'r12' };
+  }
+  // Weekend: frozen R1–2 base for all 6 + weekend delta for the 4 starters + penalties
+  const snap=S.cutSnapshot||{};
+  let base=0, counted=0;
+  for(const p of orig){ const k=norm(p); const s=(k in snap)?snap[k]:playerScore(side,p); if(s===null||s===undefined) continue; base+=s; counted++; }
+  const strt=validStarters(side);
+  let delta=0;
+  for(const p of strt){ const k=norm(p); const cur=playerScore(side,p); if(cur===null) continue; const sn=(k in snap)?snap[k]:cur; delta+=(cur-sn); }
+  const penalty = 10*Math.max(0, 4-strt.length);
+  return { sum: base+delta+penalty, counted, penalty, starters: strt.length, base, delta, mode:'weekend' };
 }
+
+function toggleStarter(k){
+  const [side,name]=splitKey(k);
+  const arr=S.startWknd[side]||(S.startWknd[side]=[]);
+  const i=arr.indexOf(name);
+  if(i>=0){ arr.splice(i,1); }
+  else {
+    if(cutOf(name)==='missed'){ toast('That player missed the cut'); return; }
+    if(validStarters(side).length>=4){ toast('You already have 4 starters — bench one first'); return; }
+    arr.push(name);
+  }
+  save(); render();
+}
+function add7(side){
+  const inp=document.querySelector(`[data-sev="${side}"]`);
+  const val=(inp?.value||'').trim(); if(!val) return;
+  if(S.sync==='on' && FIELD.length){
+    if(!LIVE[norm(val)]){ toast(`No player named “${val}” in the field`); return; }
+    if(cutOf(val)==='missed'){ toast(`${val} missed the cut — not eligible`); return; }
+  }
+  S.roster7[side]=val; save(); render();
+}
+function remove7(side){
+  const nm=S.roster7[side]; S.roster7[side]='';
+  S.startWknd[side]=(S.startWknd[side]||[]).filter(n=>n!==nm);
+  save(); render();
+}
+function lockLineups(){
+  const a=validStarters('A').length, b=validStarters('B').length;
+  if((a<4||b<4) && !confirm(`Lock now? A team without 4 starters takes +10 per empty slot.\n\n${S.teams.A.name}: ${a}/4\n${S.teams.B.name}: ${b}/4`)) return;
+  const snap={};
+  for(const k in LIVE){ const v=LIVE[k].toPar; if(v!==null&&v!==undefined) snap[k]=v; }
+  S.cutSnapshot=snap; S.locked=true; save(); render(); toast('Weekend lineups locked 🔒');
+}
+function unlockLineups(){ if(confirm('Unlock the weekend roster? Scores will recompute live until you lock again.')){ S.locked=false; save(); render(); } }
 
 /* ---------------- Rendering ---------------- */
 function render(){
@@ -390,13 +486,13 @@ function render(){
     else{ const lead = tA.sum<tB.sum? 'A':'B'; const diff=Math.abs(tA.sum-tB.sum); pill.textContent=`${S.teams[lead].name.split(' ')[0]} +${diff}`; pill.className='lead-pill'; }
   } else { pill.textContent='—'; pill.className='lead-pill tie'; }
 
-  $('#yourA').textContent = S.mine==='A'? '★ Your team':'';
-  $('#yourB').textContent = S.mine==='B'? '★ Your team':'';
+  $('#yourA').textContent = S.mine==='A'? '★ My team':'';
+  $('#yourB').textContent = S.mine==='B'? '★ My team':'';
   setAvatar('#avA', S.avatars.A); setAvatar('#avB', S.avatars.B);
 
-  // thru summary (players still on course)
-  $('#thruA').textContent = playingSummary('A');
-  $('#thruB').textContent = playingSummary('B');
+  // thru summary (players still on course) + any weekend penalty
+  $('#thruA').textContent = summaryLine('A');
+  $('#thruB').textContent = summaryLine('B');
 
   // event line
   const st=$('#evStatus');
@@ -405,6 +501,8 @@ function render(){
   else if(EVENT.status==='post'){ st.textContent='Final'; st.className='badge final'; }
   else { st.textContent = EVENT.statusText||'Scheduled'; st.className='badge'; }
 
+  renderWhoami();
+  renderWeekendBanner();
   renderTeams();
 
   // tab switching
@@ -425,6 +523,8 @@ function renderBoard(){
   const mineSet=new Set(S.teams[S.mine].players.map(norm));
   const oppSet=new Set(S.teams[oppSide].players.map(norm));
   const sorted=FIELD.slice().sort((a,b)=>{
+    const am=a.cutStatus==='missed', bm=b.cutStatus==='missed';
+    if(am!==bm) return am?1:-1;               // missed-cut players sink to the bottom
     const an=a.toPar===null, bn=b.toPar===null;
     if(an&&bn) return a.order-b.order;
     if(an) return 1; if(bn) return -1;
@@ -445,7 +545,7 @@ function renderBoard(){
         <div class="lb-ava">
           <span class="lb-init">${esc(initials)}</span>
           ${e.headshot?`<img class="lb-photo" src="${e.headshot}" alt="" onerror="this.remove()">`:''}
-          <span class="lb-num">${e.pos||'–'}</span>
+          <span class="lb-num${e.cutStatus==='missed'?' cut':''}">${e.cutStatus==='missed'?'CUT':(e.pos||'–')}</span>
         </div>
         <div class="lb-id">
           <div class="lb-nm">${esc(e.name)}</div>
@@ -491,14 +591,77 @@ function playerDetail(side,p,l){
   const rounds = (l.rounds&&l.rounds.length)
     ? `<div class="pd-rounds">${l.rounds.map((r,i)=>`<div class="pd-round"><span>R${i+1}</span><b>${esc(String(r))}</b></div>`).join('')}</div>`
     : '<div class="pd-empty">No round scores yet.</div>';
+  const cut = cutOf(p);
+  const cutToggle = (weekendPlanning() && !S.locked)
+    ? `<div class="pd-rlabel">Cut status</div>
+       <div class="pd-cutbtns">
+         <button class="cutbtn ${cut!=='missed'?'sel':''}" data-setcut="made::${esc(p)}">Made cut</button>
+         <button class="cutbtn miss ${cut==='missed'?'sel':''}" data-setcut="missed::${esc(p)}">Missed cut</button>
+       </div>`
+    : '';
   return `<div class="pdetail">
     <div class="pd-stats">${stats.map(([k,v])=>`<div class="pd-stat"><span>${k}</span><b class="${k==='Total'?parClass(l.toPar):''}">${v}</b></div>`).join('')}</div>
     <div class="pd-rlabel">Round scores</div>
     ${rounds}
+    ${cutToggle}
     ${l.card?`<a class="pd-link" href="${l.card}" target="_blank" rel="noopener">Full stats on ESPN ↗</a>`:''}
   </div>`;
 }
 
+function summaryLine(side){
+  const t=teamTotal(side);
+  const pen = t.penalty ? `+${t.penalty} pen` : '';
+  const play = playingSummary(side);
+  const lock = (t.mode==='weekend') ? '🔒 weekend' : '';
+  return [play, lock, pen].filter(Boolean).join(' · ');
+}
+function renderWhoami(){
+  const el=$('#whoami'); if(!el) return;
+  el.innerHTML=`<span class="whoami-label">📱 My team</span>
+    <div class="whoami-seg">
+      <button class="${S.mine==='A'?'on':''}" data-mine="A">${esc(S.teams.A.name)}</button>
+      <button class="${S.mine==='B'?'on':''}" data-mine="B">${esc(S.teams.B.name)}</button>
+    </div>`;
+  el.querySelectorAll('[data-mine]').forEach(b=> b.onclick=()=>{ S.mine=b.dataset.mine; hasBaseline=false; prevScores={}; save(); render(); toast(`This phone: ${S.teams[S.mine].name}`); });
+}
+function renderWeekendBanner(){
+  const el=$('#weekendBanner'); if(!el) return;
+  if(!weekendPlanning()){
+    el.style.display='';
+    el.innerHTML=`<div class="wkbanner slim"><span>Weekend: 4 starters + optional 7th (cut-makers). Unlocks after Friday.</span><button class="btn ghost sm" id="planBtn">Set up now</button></div>`;
+    const pb=$('#planBtn'); if(pb) pb.onclick=()=>{ S.planWknd=true; save(); render(); };
+    return;
+  }
+  el.style.display='';
+  el.innerHTML=`<div class="wkbanner">
+    <div class="wkb-top"><b>Weekend lineups</b>${S.locked?'<span class="wkb-lock">🔒 Locked</span>':''}</div>
+    <div class="wkb-sub">${S.locked
+      ? 'Locked for the weekend. Rounds 1–2 counted all 6; now only each team’s 4 starters count.'
+      : 'Pick 4 starters per team (bench 2). Add an optional 7th from the cut-makers. Then lock after Friday — empty starter slots cost +10 each.'}</div>
+    <div class="wkb-actions">${S.locked
+      ? `<button class="btn sm" id="copyCfgBtn">📋 Copy robot config</button><button class="btn ghost sm" id="unlockBtn">Unlock</button>`
+      : `<button class="btn sm" id="lockBtn">🔒 Lock weekend lineups</button>`}</div>
+  </div>`;
+  const lb=$('#lockBtn'); if(lb) lb.onclick=lockLineups;
+  const ub=$('#unlockBtn'); if(ub) ub.onclick=unlockLineups;
+  const cb=$('#copyCfgBtn'); if(cb) cb.onclick=exportRobotConfig;
+}
+function exportRobotConfig(){
+  const mine=S.mine, opp=(mine==='A'?'B':'A');
+  const snap={};
+  for(const side of ['A','B']){ for(const p of rosterList(side)){ const k=norm(p); if(k in S.cutSnapshot) snap[k]=S.cutSnapshot[k]; } }
+  const cfg={
+    teamName:S.teams[mine].name, players:S.teams[mine].players,
+    opponentName:S.teams[opp].name, opponentPlayers:S.teams[opp].players,
+    countBest:6, ntfyServer:'https://ntfy.sh', ntfyTopic:NTFY_TOPIC, notifyOnOpponentMove:false,
+    weekend:{ locked:S.locked, starters:validStarters(mine), seventh:S.roster7[mine]||'',
+              opponentStarters:validStarters(opp), opponentSeventh:S.roster7[opp]||'', cutSnapshot:snap }
+  };
+  const txt=JSON.stringify(cfg,null,2);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast('Copied! Paste into robot/config.json on GitHub')).catch(()=>prompt('Copy this into robot/config.json:',txt));
+  } else prompt('Copy this into robot/config.json:',txt);
+}
 function playingSummary(side){
   let onCourse=0, done=0;
   for(const p of S.teams[side].players){
@@ -512,50 +675,85 @@ function playingSummary(side){
 
 function renderTeams(){
   const host=$('#teams'); host.innerHTML='';
+  const planning = weekendPlanning();
   for(const side of ['A','B']){
     const t=S.teams[side]; const tot=teamTotal(side);
     const mine = S.mine===side;
-    const weekend = EVENT.round>=3;
     const card=document.createElement('div');
     card.className='team'+(mine?' mine':'');
     let rows='';
-    for(const p of t.players){
-      const benched=isBench(side,p);
+    for(const p of rosterList(side)){
+      const is7 = S.roster7[side] && p===S.roster7[side];
       const l=playerLive(p);
       const s=playerScore(side,p);
+      const missed = cutOf(p)==='missed';
+      const started = isStarterChosen(side,p) && !missed;
       const rounds = (l&&l.rounds&&l.rounds.length)? `<div class="rounds">${l.rounds.map(r=>`<span class="rd">${r}</span>`).join('')}</div>`:'';
       let statusTxt='';
       if(S.sync==='on'){
-        if(l&&l.live) statusTxt=`<span class="dotlive"></span> ${l.thru||'On course'}`;
+        if(missed) statusTxt='<span class="mc">Missed cut</span>';
+        else if(l&&l.live) statusTxt=`<span class="dotlive"></span> ${l.thru||'On course'}`;
         else if(l&&l.done) statusTxt='Finished';
         else if(l&&l.tee) statusTxt='Tees '+l.tee;
         else statusTxt='—';
       } else statusTxt='Manual';
+      // control column: weekend = starter toggle (cut players locked out); R1–2 = static "counts"
+      let ctrl;
+      if(planning){
+        if(missed) ctrl=`<div class="chk mc-x" title="Missed the cut — can't start">✕</div>`;
+        else if(S.locked) ctrl=`<div class="chk ${started?'on':''} static" title="Locked for the weekend">${started?'✓':''}</div>`;
+        else ctrl=`<button class="chk ${started?'on':''}" data-start="${key(side,p)}" title="Weekend starter">${started?'✓':''}</button>`;
+      } else {
+        ctrl=`<div class="chk on static" title="Counts in Rounds 1–2">✓</div>`;
+      }
       const scoreCell = (S.sync==='off')
         ? `<input class="man-in" inputmode="text" data-man="${key(side,p)}" value="${S.manual[key(side,p)]??''}" placeholder="–">`
         : `<span class="${parClass(s)}">${parPretty(s)}</span>`;
       const isOpen=expanded.has(key(side,p));
-      rows += `<div class="player${benched?' benched':''}">
-        <button class="chk ${benched?'':'on'}" data-bench="${key(side,p)}" title="Counts toward team total">${benched?'':'✓'}</button>
-        <div class="pinfo" data-exp="${key(side,p)}"><div class="pn">${esc(p)} <span class="chev">${isOpen?'▾':'▸'}</span></div><div class="ps">${statusTxt}${rounds}</div></div>
+      const dim = (planning && !started) ? ' benched' : '';
+      rows += `<div class="player${dim}">
+        ${ctrl}
+        <div class="pinfo" data-exp="${key(side,p)}"><div class="pn">${esc(p)} ${is7?'<span class="pill7">7TH</span>':''}<span class="chev">${isOpen?'▾':'▸'}</span></div><div class="ps">${statusTxt}${rounds}</div></div>
         <div class="pscore">${scoreCell}</div>
       </div>${isOpen?playerDetail(side,p,l):''}`;
+    }
+    // 7th roster slot (weekend planning, before lock)
+    let seventh='';
+    if(planning && !S.locked){
+      seventh = S.roster7[side]
+        ? `<div class="seventh"><span>7th player: <b>${esc(S.roster7[side])}</b></span><button class="btn ghost sm" data-rm7="${side}">Remove</button></div>`
+        : `<div class="seventh"><input class="sev-in" data-sev="${side}" placeholder="Add 7th player (a cut-maker)"><button class="btn sm" data-add7="${side}">Add</button></div>`;
+    } else if(S.locked && S.roster7[side]){
+      seventh = `<div class="seventh locked"><span>7th player: <b>${esc(S.roster7[side])}</b></span></div>`;
+    }
+    // lineup status line
+    let statusLine='';
+    if(planning){
+      const n=validStarters(side).length, pen=Math.max(0,4-n)*10;
+      let parts=`${S.locked?'🔒 ':''}Starters ${n}/4${pen?` · +${pen} penalty`:' · set'}`;
+      if(S.locked && tot.mode==='weekend') parts=`🔒 Thu/Fri ${parPretty(tot.base)} · Wknd ${parPretty(tot.delta)}${pen?` · +${pen}`:''} · ${n}/4`;
+      statusLine=`<div class="wk-status ${pen?'warn':'ok'}">${parts}</div>`;
     }
     card.innerHTML=`
       <div class="team-h">
         ${S.avatars[side]?`<img class="thead-av" src="${S.avatars[side]}" alt="">`:''}
         <div class="nm">${esc(t.name)} ${mine?'<span class="mine-star">★</span>':''}</div>
-        <div class="tot ${parClass(tot.counted?tot.sum:null)}">${tot.counted?parPretty(tot.sum):'—'}</div>
+        <div class="tot ${parClass((tot.counted||tot.penalty)?tot.sum:null)}">${(tot.counted||tot.penalty)?parPretty(tot.sum):'—'}</div>
       </div>
-      <div class="cols"><div>${weekend?'Start':'✓'}</div><div>Player</div><div class="r">To&nbsp;Par</div></div>
+      <div class="cols"><div>${planning?'Start':'✓'}</div><div>Player</div><div class="r">To&nbsp;Par</div></div>
       ${rows}
-      <div class="rulenote">${weekend? 'Weekend: pick your 4 starters (checked players count).' : 'R1–2: all players count.'}</div>`;
+      ${seventh}
+      ${statusLine}
+      <div class="rulenote">${planning? 'Weekend: 4 starters count. Bench 2 · optional 7th from cut-makers · empty slots = +10 each.' : 'Rounds 1–2: all 6 players count.'}</div>`;
     host.appendChild(card);
   }
   // wire per-render controls
-  host.querySelectorAll('[data-bench]').forEach(b=> b.onclick=(e)=>{ e.stopPropagation(); const k=b.dataset.bench; S.bench[k]=!S.bench[k]; save(); render(); });
+  host.querySelectorAll('[data-start]').forEach(b=> b.onclick=(e)=>{ e.stopPropagation(); toggleStarter(b.dataset.start); });
   host.querySelectorAll('[data-exp]').forEach(el=> el.onclick=()=>{ const k=el.dataset.exp; expanded.has(k)?expanded.delete(k):expanded.add(k); renderTeams(); });
   host.querySelectorAll('[data-man]').forEach(inp=> inp.oninput=()=>{ S.manual[inp.dataset.man]=inp.value.trim(); save(); softUpdateTotals(); });
+  host.querySelectorAll('[data-add7]').forEach(b=> b.onclick=()=>add7(b.dataset.add7));
+  host.querySelectorAll('[data-rm7]').forEach(b=> b.onclick=()=>remove7(b.dataset.rm7));
+  host.querySelectorAll('[data-setcut]').forEach(b=> b.onclick=(e)=>{ e.stopPropagation(); const parts=b.dataset.setcut.split('::'); setCut(parts[1], parts[0]); });
 }
 function softUpdateTotals(){ // update totals without re-rendering inputs (keeps focus)
   const tA=teamTotal('A'), tB=teamTotal('B');
@@ -583,6 +781,7 @@ function readAvatar(file, cb){
 
 /* ---------------- ESPN sync ---------------- */
 const API='https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+const NTFY_TOPIC='mmt-413ab7587a6e';   // your phone's alert channel (for the robot-config export)
 let syncing=false;
 async function sync(showToastMsg){
   if(S.sync!=='on'){ render(); return; }
@@ -638,10 +837,14 @@ function parseEvent(ev){
     const card=(links.find(l=>l.rel?.includes('playercard'))||links.find(l=>l.rel?.includes('stats'))||links[0]||{}).href||'';
     const pid = c.id || (card.match(/\/id\/(\d+)\//)||[])[1] || '';
     const headshot = pid ? `https://a.espncdn.com/i/headshots/golf/players/full/${pid}.png` : '';
+    // cut detection: ESPN flags missed-cut / withdrawn / DQ players in status text
+    const stBlob = `${cs.type?.name||''} ${cs.type?.description||''} ${cs.displayValue||''} ${cs.position?.displayName||''}`;
+    const missed = /\bcut\b|withdraw|\bwd\b|disqualif|\bdq\b/i.test(stBlob);
+    const cutStatus = missed ? 'missed' : ((EVENT.round||0)>=3 && toNum(c.score)!==null ? 'made' : null);
     const entry={
       name: c.athlete?.displayName||'', nm,
       toPar: toNum(c.score),
-      thru, live, done,
+      thru, live, done, cutStatus,
       tee: (!live&&!done)? (cs.displayValue||cs.type?.shortDetail||'') : '',
       rounds, card, headshot, pos:'', order: c.order||999
     };
@@ -649,7 +852,7 @@ function parseEvent(ev){
   }
   // compute live positions from the field (skip pre-tournament when everyone is even)
   if(EVENT.status!=='pre'){
-    const ranked=FIELD.filter(e=>e.toPar!==null).slice().sort((a,b)=>a.toPar-b.toPar);
+    const ranked=FIELD.filter(e=>e.toPar!==null && e.cutStatus!=='missed').slice().sort((a,b)=>a.toPar-b.toPar);
     const counts={}; ranked.forEach(e=>counts[e.toPar]=(counts[e.toPar]||0)+1);
     let lastScore=null, lastPos=0;
     ranked.forEach((e,i)=>{ if(e.toPar!==lastScore){ lastPos=i+1; lastScore=e.toPar; } e.pos=(counts[e.toPar]>1?'T':'')+lastPos; });
