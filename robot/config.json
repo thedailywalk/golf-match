@@ -8,7 +8,7 @@
     "Wyndham Clark",
     "Ludvig Åberg"
   ],
-  "opponentName": "Strike Eagle",
+  "opponentName": "Strike Eagle 🦅",
   "opponentPlayers": [
     "Rory McIlroy",
     "Collin Morikawa",
@@ -20,5 +20,13 @@
   "countBest": 6,
   "ntfyServer": "https://ntfy.sh",
   "ntfyTopic": "mmt-413ab7587a6e",
-  "notifyOnOpponentMove": false
+  "notifyOnOpponentMove": false,
+  "weekend": {
+    "locked": false,
+    "starters": [],
+    "seventh": "",
+    "opponentStarters": [],
+    "opponentSeventh": "",
+    "cutSnapshot": {}
+  }
 }

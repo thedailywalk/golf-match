@@ -1,7 +1,9 @@
 // Major Match Tracker — alerts robot
 // Runs on a schedule (GitHub Actions). Polls ESPN's public golf feed, compares
 // against last-seen scores, and pushes a phone notification via ntfy.sh when
-// your team's score moves. No server, no keys — just a scheduled fetch + push.
+// your team's score moves. Weekend-aware: once config.weekend.locked is true it
+// scores exactly like the app (all-6 through the cut + your 4 starters + penalties)
+// and only alerts on starter moves. No server, no keys — just a scheduled fetch.
 
 import { readFile, writeFile } from 'node:fs/promises';
 
@@ -9,10 +11,12 @@ const API = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const HERE = new URL('.', import.meta.url);
 const cfg = JSON.parse(await readFile(new URL('config.json', HERE), 'utf8'));
 const STATE = new URL('state.json', HERE);
+const wk = cfg.weekend || {};
+const weekend = !!wk.locked;
 
 const norm = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z ]/g, '').trim();
 const num = (v) => (v === 'E' ? 0 : (Number.isNaN(Number(v)) ? null : Number(v)));
-const pretty = (n) => (n === null ? '—' : n === 0 ? 'E' : n > 0 ? `+${n}` : `${n}`);
+const pretty = (n) => (n == null ? '—' : n === 0 ? 'E' : n > 0 ? `+${n}` : `${n}`);
 
 async function loadState() { try { return JSON.parse(await readFile(STATE, 'utf8')); } catch { return {}; } }
 async function saveState(s) { await writeFile(STATE, JSON.stringify(s, null, 2)); }
@@ -42,23 +46,38 @@ function readCompetitors(ev) {
   return map;
 }
 
-function teamTotal(players, live, countBest) {
+// Rounds 1–2 / not locked: best-N cumulative. Weekend (locked): mirrors the app.
+function bestNTotal(players, live, countBest) {
   const scored = players.map((p) => live[norm(p)]?.toPar).filter((v) => v != null).sort((a, b) => a - b);
   const n = Math.min(countBest || players.length, scored.length);
   return scored.slice(0, n).reduce((a, b) => a + b, 0);
+}
+function weekendTotal(players, seventh, starters, snap, live) {
+  let base = 0;
+  for (const p of players) { const k = norm(p); const s = (k in snap) ? snap[k] : live[k]?.toPar; if (s != null) base += s; }
+  const valid = (starters || []).slice(0, 4);   // app already filtered to cut-making picks
+  let delta = 0;
+  for (const p of valid) { const k = norm(p); const cur = live[k]?.toPar; const sn = (k in snap) ? snap[k] : cur; if (cur != null) delta += (cur - sn); }
+  return base + delta + 10 * Math.max(0, 4 - valid.length);
+}
+function totalFor(which, live) {
+  if (weekend) {
+    const snap = wk.cutSnapshot || {};
+    return which === 'mine'
+      ? weekendTotal(cfg.players, wk.seventh, wk.starters, snap, live)
+      : weekendTotal(cfg.opponentPlayers, wk.opponentSeventh, wk.opponentStarters, snap, live);
+  }
+  return which === 'mine'
+    ? bestNTotal(cfg.players, live, cfg.countBest)
+    : bestNTotal(cfg.opponentPlayers, live, cfg.countBest);
 }
 
 async function push(title, body, tags, priority) {
   const url = `${cfg.ntfyServer.replace(/\/$/, '')}/${cfg.ntfyTopic}`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Title': title,
-      'Tags': tags || 'golf',
-      'Priority': String(priority || 'default'),
-      'Content-Type': 'text/plain; charset=utf-8'
-    },
-    body: body
+    headers: { 'Title': title, 'Tags': tags || 'golf', 'Priority': String(priority || 'default'), 'Content-Type': 'text/plain; charset=utf-8' },
+    body
   });
   if (!res.ok) throw new Error(`ntfy ${res.status}`);
   console.log('pushed:', title, '/', body);
@@ -77,27 +96,30 @@ async function push(title, body, tags, priority) {
 
   const live = readCompetitors(ev);
   const prev = await loadState();
-  const next = { event: evName, round, players: {} };
+  const next = { event: evName, round, players: {}, lockReminded: prev.lockReminded, finalSent: prev.finalSent };
 
-  // detect per-player moves on OUR team (and opponent if enabled)
+  // which players' moves are "relevant" (count toward the total right now)
+  const myRoster = weekend && wk.seventh ? [...cfg.players, wk.seventh] : cfg.players;
+  const oppRoster = weekend && wk.opponentSeventh ? [...cfg.opponentPlayers, wk.opponentSeventh] : cfg.opponentPlayers;
+  const relevantMine = new Set((weekend ? (wk.starters || []) : cfg.players).map(norm));
+  const relevantOpp = new Set((weekend ? (wk.opponentStarters || []) : cfg.opponentPlayers).map(norm));
+
   const moves = [];
-  const scan = (players, teamName, mine) => {
-    for (const p of players) {
-      const l = live[norm(p)];
-      if (!l || l.toPar == null) continue;
-      const k = norm(p);
+  const track = (roster, isMine) => {
+    for (const p of roster) {
+      const k = norm(p); const l = live[k]; if (!l || l.toPar == null) continue;
       next.players[k] = l.toPar;
       const before = prev.players?.[k];
-      if (before !== undefined && before !== l.toPar && (mine || cfg.notifyOnOpponentMove)) {
-        moves.push({ name: l.name || p, from: before, to: l.toPar, delta: l.toPar - before, mine, thru: l.thru });
-      }
+      const relevant = isMine ? relevantMine.has(k) : (cfg.notifyOnOpponentMove && relevantOpp.has(k));
+      if (before !== undefined && before !== l.toPar && relevant)
+        moves.push({ name: l.name || p, from: before, to: l.toPar, delta: l.toPar - before, mine: isMine, thru: l.thru });
     }
   };
-  scan(cfg.players, cfg.teamName, true);
-  scan(cfg.opponentPlayers, cfg.opponentName, false);
+  track(myRoster, true);
+  track(oppRoster, false);
 
-  const myTot = teamTotal(cfg.players, live, cfg.countBest);
-  const oppTot = teamTotal(cfg.opponentPlayers, live, cfg.countBest);
+  const myTot = totalFor('mine', live);
+  const oppTot = totalFor('opp', live);
   const margin = oppTot - myTot; // >0 => you lead
   const standing = margin === 0 ? 'all square' : margin > 0 ? `leading by ${margin}` : `trailing by ${-margin}`;
 
@@ -106,7 +128,16 @@ async function push(title, body, tags, priority) {
   // First run just seeds state (no spam)
   if (prev.players === undefined) { console.log('seeded state, no alert on first run'); return; }
 
-  // Final-round wrap-up (once)
+  // Weekend has begun but the lineup isn't locked in config yet — nudge once.
+  if (round >= 3 && !weekend && !prev.lockReminded) {
+    next.lockReminded = true; await saveState(next);
+    await push('🔒 Lock your weekend lineup',
+      `${evName}: the cut is in. In the app, set your 4 starters, tap Lock, then "Copy robot config" → paste into robot/config.json so the weekend scores correctly.`,
+      'lock,golf', 'high');
+    return;
+  }
+
+  // Final wrap-up (once)
   if (state === 'post' && !prev.finalSent) {
     next.finalSent = true; await saveState(next);
     const won = margin > 0, tie = margin === 0;
@@ -118,7 +149,7 @@ async function push(title, body, tags, priority) {
     return;
   }
 
-  if (!moves.length) { console.log('no changes'); return; }
+  if (!moves.length) { console.log('no relevant changes'); return; }
 
   const mine = moves.filter((m) => m.mine).sort((a, b) => a.delta - b.delta);
   const best = mine[0] || moves.sort((a, b) => a.delta - b.delta)[0];
