@@ -118,6 +118,70 @@
 
   .rulenote{padding:9px 14px 13px;font-size:11px;color:var(--muted);text-align:center}
 
+  /* Tabs */
+  .tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:5px;margin-top:14px;box-shadow:var(--shadow)}
+  .tab{flex:1;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:14px;padding:11px;border-radius:10px;cursor:pointer;transition:.15s}
+  .tab.on{background:var(--navy);color:#fff}
+  .tab:active{transform:scale(.98)}
+
+  /* Player detail dropdown */
+  .pinfo{cursor:pointer}
+  .chev{color:var(--muted);font-size:11px;font-weight:700;margin-left:2px}
+  .pdetail{padding:2px 12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(11,46,79,.05),transparent);animation:slidein .18s ease}
+  @keyframes slidein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .pd-stats{display:flex;gap:8px;margin:6px 0 10px}
+  .pd-stat{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+  .pd-stat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:800;margin-bottom:3px}
+  .pd-stat b{font-size:19px;font-weight:900}
+  .pd-rlabel{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:800;margin-bottom:5px}
+  .pd-rounds{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
+  .pd-round{display:flex;flex-direction:column;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:5px 12px;min-width:46px}
+  .pd-round span{font-size:10px;color:var(--muted);font-weight:800}
+  .pd-round b{font-size:16px;font-weight:800}
+  .pd-empty{color:var(--muted);font-size:12px;padding:4px 0 10px}
+  .pd-link{display:inline-block;font-size:12px;font-weight:800;color:var(--navy);text-decoration:none;border:1px solid var(--line);border-radius:9px;padding:8px 12px}
+
+  /* Leaderboard (card style) */
+  #boardView{margin-top:14px}
+  .lb-legend{display:flex;justify-content:space-between;align-items:center;padding:0 10px 10px;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+  .lb-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+  .lb-card.mine{border-color:var(--gold)}
+  .lb-main{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:11px;padding:12px 13px;cursor:pointer}
+  .lb-card.mine .lb-main{background:linear-gradient(90deg,rgba(244,183,64,.12),transparent)}
+  .lb-card.opp .lb-main{background:linear-gradient(90deg,rgba(11,46,79,.07),transparent)}
+  .lb-card.open .lb-main{background:rgba(110,120,255,.11)}
+  .lb-ava{position:relative;width:52px;height:52px;flex:none}
+  .lb-init{position:absolute;inset:0;display:grid;place-items:center;border-radius:13px;background:var(--navy);color:#fff;font-weight:800;font-size:15px}
+  .lb-photo{position:absolute;inset:0;width:52px;height:52px;border-radius:13px;object-fit:cover;object-position:top center;background:var(--paper);border:1px solid var(--line)}
+  .lb-num{position:absolute;top:-7px;left:-7px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--card);z-index:2}
+  .lb-id{min-width:0}
+  .lb-nm{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lb-sub{margin-top:4px}
+  .lb-chip{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px}
+  .lb-chip.mine{background:rgba(244,183,64,.28);color:#7a5600}
+  .lb-chip.opp{background:rgba(11,46,79,.12);color:var(--navy)}
+  .lb-chip.field{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+  .lb-nums{display:flex;gap:14px;text-align:center}
+  .lb-col b{display:block;font-size:20px;font-weight:900;line-height:1.05}
+  .lb-col b .dotlive{margin-right:3px}
+  .lb-col span{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:800}
+  .lb-chev{color:var(--muted);font-size:13px;font-weight:700}
+  .lb-detail{padding:2px 14px 14px;border-top:1px solid var(--line)}
+  .sc-stats{display:flex;gap:8px;margin:12px 0}
+  .sc-stat{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+  .sc-stat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:800;margin-bottom:3px}
+  .sc-stat b{font-size:18px;font-weight:900}
+  .sc-rlabel{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:800;margin:2px 0 7px}
+  .sc-rounds{display:flex;gap:8px;flex-wrap:wrap}
+  .sc-col{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .sc-h{font-size:10px;color:var(--muted);font-weight:800}
+  .sc-bub{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:900;font-size:15px;background:var(--paper);border:1px solid var(--line);color:var(--text)}
+  .sc-bub.good{background:var(--good);color:#04180b;border-color:transparent}
+  .sc-bub.bad{background:var(--bad);color:#fff;border-color:transparent}
+  .sc-empty{color:var(--muted);font-size:12px;padding:6px 0}
+  .board-empty{padding:30px 18px;text-align:center;color:var(--muted);font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:16px}
+  @media (prefers-color-scheme:dark){ .pd-link{color:var(--gold)} .tab.on{background:var(--gold);color:#3a2a00} .lb-chip.mine{background:rgba(244,183,64,.20);color:#ffce6b} .lb-chip.opp{background:rgba(255,255,255,.1);color:var(--text)} .lb-init{background:#1d3346} .lb-card.open .lb-main{background:rgba(120,130,255,.16)} }
+
   /* generic */
   .section-t{font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:20px 4px 8px}
   .foot{margin:22px 4px 30px;font-size:11px;color:var(--muted);text-align:center;line-height:1.6}
@@ -162,6 +226,12 @@
 </header>
 
 <div class="wrap">
+  <div class="tabs">
+    <button class="tab on" data-view="match">⛳ Draft</button>
+    <button class="tab" data-view="board">🏆 Leaderboard</button>
+  </div>
+
+  <div id="matchView">
   <!-- Match summary -->
   <div class="summary">
     <div class="scoreband">
@@ -191,6 +261,9 @@
   </div>
 
   <div id="teams"></div>
+  </div><!-- /matchView -->
+
+  <div id="boardView" style="display:none"></div>
 
   <div class="foot" id="foot"></div>
 </div>
@@ -263,9 +336,12 @@ function save(){ localStorage.setItem(LS, JSON.stringify(S)); }
 
 /* live data: normalizedName -> {toPar, thru, rounds[], live} */
 let LIVE = {};
+let FIELD = [];             // full field (array) for the leaderboard tab
 let EVENT = { name:'', status:'pre', statusText:'', round:0 };
 let prevScores = {};        // for change detection (your team)
 let hasBaseline = false;
+let VIEW = 'match';         // 'match' | 'board'
+const expanded = new Set(); // player keys with their stats dropdown open
 
 /* ---------------- Helpers ---------------- */
 const $ = (s,r=document)=>r.querySelector(s);
@@ -330,7 +406,97 @@ function render(){
   else { st.textContent = EVENT.statusText||'Scheduled'; st.className='badge'; }
 
   renderTeams();
+
+  // tab switching
+  document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('on', t.dataset.view===VIEW));
+  $('#matchView').style.display = VIEW==='match' ? '' : 'none';
+  $('#boardView').style.display = VIEW==='board' ? '' : 'none';
+  if(VIEW==='board') renderBoard();
+
   $('#foot').innerHTML = 'Scores from ESPN’s public golf feed · matched by player name.<br>Notifications fire while this app is open. Add to Home Screen for the full-screen app.';
+}
+
+/* ---------------- Leaderboard tab ---------------- */
+function renderBoard(){
+  const host=$('#boardView');
+  if(S.sync!=='on'){ host.innerHTML='<div class="board-empty">Turn on Live Sync (✎) to see the leaderboard.</div>'; return; }
+  if(!FIELD.length){ host.innerHTML='<div class="board-empty">The leaderboard fills in once the round is live.</div>'; return; }
+  const oppSide = S.mine==='A'?'B':'A';
+  const mineSet=new Set(S.teams[S.mine].players.map(norm));
+  const oppSet=new Set(S.teams[oppSide].players.map(norm));
+  const sorted=FIELD.slice().sort((a,b)=>{
+    const an=a.toPar===null, bn=b.toPar===null;
+    if(an&&bn) return a.order-b.order;
+    if(an) return 1; if(bn) return -1;
+    if(a.toPar!==b.toPar) return a.toPar-b.toPar;
+    return a.order-b.order;
+  });
+  let cards='';
+  for(const e of sorted){
+    const isMine=mineSet.has(e.nm), isOpp=oppSet.has(e.nm);
+    const open=expanded.has('lb:'+e.nm);
+    const chip = isMine? '<span class="lb-chip mine">★ Your pick</span>'
+               : isOpp? '<span class="lb-chip opp">Rival</span>'
+               : '<span class="lb-chip field">In the field</span>';
+    const thruTxt = e.live? `<span class="dotlive"></span>${(e.thru||'').replace('Thru ','')}` : e.done? 'F' : (e.tee||'–');
+    const initials = (e.name.split(' ').map(w=>w[0]).join('')||'?').slice(0,2).toUpperCase();
+    cards += `<div class="lb-card${isMine?' mine':isOpp?' opp':''}${open?' open':''}">
+      <div class="lb-main" data-lbexp="${e.nm}">
+        <div class="lb-ava">
+          <span class="lb-init">${esc(initials)}</span>
+          ${e.headshot?`<img class="lb-photo" src="${e.headshot}" alt="" onerror="this.remove()">`:''}
+          <span class="lb-num">${e.pos||'–'}</span>
+        </div>
+        <div class="lb-id">
+          <div class="lb-nm">${esc(e.name)}</div>
+          <div class="lb-sub">${chip}</div>
+        </div>
+        <div class="lb-nums">
+          <div class="lb-col"><b class="${parClass(e.toPar)}">${parPretty(e.toPar)}</b><span>To&nbsp;Par</span></div>
+          <div class="lb-col"><b>${thruTxt}</b><span>Thru</span></div>
+        </div>
+        <span class="lb-chev">${open?'▾':'▸'}</span>
+      </div>
+      ${open? boardDetail(e):''}
+    </div>`;
+  }
+  host.innerHTML=`<div class="lb-legend"><span>Players</span><span>To Par&nbsp;·&nbsp;Thru</span></div>${cards}`;
+  host.querySelectorAll('[data-lbexp]').forEach(el=> el.onclick=()=>{ const k='lb:'+el.dataset.lbexp; expanded.has(k)?expanded.delete(k):expanded.add(k); renderBoard(); });
+}
+
+/* expanded scorecard for a leaderboard player */
+function boardDetail(e){
+  const bubbles = (e.rounds&&e.rounds.length)
+    ? `<div class="sc-rounds">${e.rounds.map((r,i)=>{ const v=String(r); const cls=v.startsWith('-')?'good':(v.startsWith('+')?'bad':''); return `<div class="sc-col"><div class="sc-h">R${i+1}</div><div class="sc-bub ${cls}">${esc(v)}</div></div>`; }).join('')}</div>`
+    : '<div class="sc-empty">Round scores appear once play begins.</div>';
+  const thru = e.live? ((e.thru||'').replace('Thru ','')||'—') : e.done? 'F' : '—';
+  return `<div class="lb-detail">
+    <div class="sc-stats">
+      <div class="sc-stat"><span>Position</span><b>${e.pos||'—'}</b></div>
+      <div class="sc-stat"><span>To Par</span><b class="${parClass(e.toPar)}">${parPretty(e.toPar)}</b></div>
+      <div class="sc-stat"><span>Thru</span><b>${thru}</b></div>
+    </div>
+    <div class="sc-rlabel">Round scores</div>
+    ${bubbles}
+    ${e.card?`<div style="margin-top:12px"><a class="pd-link" href="${e.card}" target="_blank" rel="noopener">Full stats on ESPN ↗</a></div>`:''}
+  </div>`;
+}
+
+/* stats panel shown under a player when their row is tapped */
+function playerDetail(side,p,l){
+  const last=esc(p.split(' ').slice(-1)[0]);
+  if(!l){ return `<div class="pdetail"><div class="pd-empty">Stats for ${last} appear once Live Sync finds them (check the name spelling in ✎ if it stays blank).</div></div>`; }
+  const thru = l.live? (l.thru||'On course') : l.done? 'Finished' : (l.tee?('Tees '+l.tee):'—');
+  const stats=[['Position', l.pos||'—'],['Total', parPretty(l.toPar)],['Thru', thru]];
+  const rounds = (l.rounds&&l.rounds.length)
+    ? `<div class="pd-rounds">${l.rounds.map((r,i)=>`<div class="pd-round"><span>R${i+1}</span><b>${esc(String(r))}</b></div>`).join('')}</div>`
+    : '<div class="pd-empty">No round scores yet.</div>';
+  return `<div class="pdetail">
+    <div class="pd-stats">${stats.map(([k,v])=>`<div class="pd-stat"><span>${k}</span><b class="${k==='Total'?parClass(l.toPar):''}">${v}</b></div>`).join('')}</div>
+    <div class="pd-rlabel">Round scores</div>
+    ${rounds}
+    ${l.card?`<a class="pd-link" href="${l.card}" target="_blank" rel="noopener">Full stats on ESPN ↗</a>`:''}
+  </div>`;
 }
 
 function playingSummary(side){
@@ -368,11 +534,12 @@ function renderTeams(){
       const scoreCell = (S.sync==='off')
         ? `<input class="man-in" inputmode="text" data-man="${key(side,p)}" value="${S.manual[key(side,p)]??''}" placeholder="–">`
         : `<span class="${parClass(s)}">${parPretty(s)}</span>`;
+      const isOpen=expanded.has(key(side,p));
       rows += `<div class="player${benched?' benched':''}">
         <button class="chk ${benched?'':'on'}" data-bench="${key(side,p)}" title="Counts toward team total">${benched?'':'✓'}</button>
-        <div class="pinfo"><div class="pn">${esc(p)}</div><div class="ps">${statusTxt}${rounds}</div></div>
+        <div class="pinfo" data-exp="${key(side,p)}"><div class="pn">${esc(p)} <span class="chev">${isOpen?'▾':'▸'}</span></div><div class="ps">${statusTxt}${rounds}</div></div>
         <div class="pscore">${scoreCell}</div>
-      </div>`;
+      </div>${isOpen?playerDetail(side,p,l):''}`;
     }
     card.innerHTML=`
       <div class="team-h">
@@ -386,7 +553,8 @@ function renderTeams(){
     host.appendChild(card);
   }
   // wire per-render controls
-  host.querySelectorAll('[data-bench]').forEach(b=> b.onclick=()=>{ const k=b.dataset.bench; S.bench[k]=!S.bench[k]; save(); render(); });
+  host.querySelectorAll('[data-bench]').forEach(b=> b.onclick=(e)=>{ e.stopPropagation(); const k=b.dataset.bench; S.bench[k]=!S.bench[k]; save(); render(); });
+  host.querySelectorAll('[data-exp]').forEach(el=> el.onclick=()=>{ const k=el.dataset.exp; expanded.has(k)?expanded.delete(k):expanded.add(k); renderTeams(); });
   host.querySelectorAll('[data-man]').forEach(inp=> inp.oninput=()=>{ S.manual[inp.dataset.man]=inp.value.trim(); save(); softUpdateTotals(); });
 }
 function softUpdateTotals(){ // update totals without re-rendering inputs (keeps focus)
@@ -452,7 +620,7 @@ function parseEvent(ev){
     statusText: stype.shortDetail||stype.description||'',
     round: ev.status?.period||comp.status?.period||0
   };
-  LIVE={};
+  LIVE={}; FIELD=[];
   for(const c of (comp.competitors||[])){
     const nm=norm(c.athlete?.displayName);
     if(!nm) continue;
@@ -461,16 +629,30 @@ function parseEvent(ev){
     const live = cstate==='in';
     const done = cstate==='post' || cs.type?.completed;
     let thru='';
-    if(cs.thru!==undefined && cs.thru!==null){ thru = (cs.thru==18||cs.thru==='F')?'F':('Thru '+cs.thru); }
+    if(typeof cs.thru==='number'){ thru = cs.thru>=18?'F':('Thru '+cs.thru); }
+    else if(cs.thru!=null && cs.thru!=='') thru=String(cs.thru);
     else if(cs.displayValue) thru=cs.displayValue;
     else if(cs.type?.shortDetail) thru=cs.type.shortDetail;
     const rounds=(c.linescores||[]).map(ls=> ls.displayValue||ls.value).filter(v=>v!==undefined&&v!==null&&v!=='');
-    LIVE[nm]={
+    const links=c.athlete?.links||[];
+    const card=(links.find(l=>l.rel?.includes('playercard'))||links.find(l=>l.rel?.includes('stats'))||links[0]||{}).href||'';
+    const pid = c.id || (card.match(/\/id\/(\d+)\//)||[])[1] || '';
+    const headshot = pid ? `https://a.espncdn.com/i/headshots/golf/players/full/${pid}.png` : '';
+    const entry={
+      name: c.athlete?.displayName||'', nm,
       toPar: toNum(c.score),
       thru, live, done,
-      tee: (!live&&!done)? (cs.displayValue||'') : '',
-      rounds
+      tee: (!live&&!done)? (cs.displayValue||cs.type?.shortDetail||'') : '',
+      rounds, card, headshot, pos:'', order: c.order||999
     };
+    LIVE[nm]=entry; FIELD.push(entry);
+  }
+  // compute live positions from the field (skip pre-tournament when everyone is even)
+  if(EVENT.status!=='pre'){
+    const ranked=FIELD.filter(e=>e.toPar!==null).slice().sort((a,b)=>a.toPar-b.toPar);
+    const counts={}; ranked.forEach(e=>counts[e.toPar]=(counts[e.toPar]||0)+1);
+    let lastScore=null, lastPos=0;
+    ranked.forEach((e,i)=>{ if(e.toPar!==lastScore){ lastPos=i+1; lastScore=e.toPar; } e.pos=(counts[e.toPar]>1?'T':'')+lastPos; });
   }
 }
 
@@ -559,6 +741,7 @@ $('#sheetBg').onclick=closeSheet;
 $('#notifyBtn').onclick=toggleNotify;
 document.querySelectorAll('#mineRadio button').forEach(b=> b.onclick=()=>{ S.mine=b.dataset.mine; hasBaseline=false; prevScores={}; save(); markRadios(); render(); });
 document.querySelectorAll('#syncRadio button').forEach(b=> b.onclick=()=>{ S.sync=b.dataset.sync; save(); markRadios(); render(); sync(); });
+document.querySelectorAll('.tab').forEach(t=> t.onclick=()=>{ VIEW=t.dataset.view; render(); window.scrollTo(0,0); });
 document.querySelectorAll('[data-add]').forEach(b=> b.onclick=()=>{ const sd=b.dataset.add; S.teams[sd].players.push('New player'); save(); renderRoster(sd); });
 ['A','B'].forEach(side=>{
   const f=$('#file'+side); if(f) f.onchange=()=>{ const file=f.files&&f.files[0]; if(!file) return; readAvatar(file,(data)=>{ S.avatars[side]=data; save(); renderPrev(side); render(); toast('Photo set'); }); f.value=''; };
