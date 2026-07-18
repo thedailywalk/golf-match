@@ -54,13 +54,18 @@
     padding:13px 16px;border-radius:13px;font-size:15px;font-weight:700;cursor:pointer;
     border:1px solid var(--line);background:var(--paper);color:var(--text);transition:transform .15s}
   .authbtn:active{transform:scale(.98)}
-  .authbtn.google{background:#fff;border-color:#dadce0;color:#3c4043}
+  .authbtn.google{background:var(--gold);border-color:var(--gold);color:#3a2a00;margin-top:12px}
+  .authbtn.ghost{background:transparent;border-color:var(--line);color:var(--muted);font-size:13px;padding:10px}
   .authbtn[disabled]{opacity:.55;cursor:not-allowed}
   .authbtn[disabled]:active{transform:none}
+  .authinput{width:100%;font-size:16px;padding:13px 14px;border-radius:13px;border:1px solid var(--line);
+    background:var(--paper);color:var(--text);text-align:center}
+  .authnote{margin:12px 0 0;font-size:11.5px;color:var(--muted);line-height:1.4}
+  #authSentTo{font-weight:800;color:var(--text)}
   .autherr{margin-top:14px;font-size:12.5px;color:var(--bad);background:rgba(209,73,59,.1);
     border-radius:10px;padding:9px 11px;text-align:left}
   @media (prefers-color-scheme:dark){
-    .authbtn.google{background:#1f1f1f;border-color:#3c3c3c;color:#e8eaed}
+    .authinput{background:#1a1a1a;border-color:#3c3c3c;color:#e8eaed}
   }
 
   /* Header */
@@ -324,11 +329,17 @@
   <div class="authcard">
     <div class="authlogo">⛳</div>
     <h1>Major Match</h1>
-    <p>Sign in to keep your team synced across every phone.</p>
-    <button id="googleSignInBtn" class="authbtn google" type="button">
-      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.81 2.73v2.27h2.92c1.71-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.17l-2.92-2.27c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.97 10.72c-.18-.54-.28-1.12-.28-1.72s.1-1.18.28-1.72V4.94H.96C.35 6.17 0 7.55 0 9s.35 2.83.96 4.06l3.01-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.94l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
-      Continue with Google
-    </button>
+    <div id="authStep1">
+      <p>Sign in to keep your team synced across every phone.</p>
+      <input type="email" id="authEmail" class="authinput" placeholder="you@email.com" autocomplete="email" inputmode="email">
+      <button id="sendLinkBtn" class="authbtn google" type="button">Send me a sign-in link</button>
+      <p class="authnote">No password — we'll email you a one-tap link. Works reliably in Safari, unlike Google's popup sign-in.</p>
+    </div>
+    <div id="authStep2" style="display:none">
+      <div class="authlogo" style="font-size:36px">📬</div>
+      <p><b>Check your email</b><br>We sent a sign-in link to <span id="authSentTo"></span>. Open it on this phone to finish signing in.</p>
+      <button id="resendLinkBtn" class="authbtn ghost" type="button">Didn't get it? Send again</button>
+    </div>
     <div id="authError" class="autherr" style="display:none"></div>
   </div>
 </div>
@@ -1431,7 +1442,7 @@ if('serviceWorker' in navigator){
 // This script runs AFTER the classic <script> above (module scripts are deferred), so window.toast etc. already exist.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
+  getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp
@@ -1510,8 +1521,14 @@ async function startLeagueSync(){
 document.addEventListener('mmt:signedIn', () => { startLeagueSync(); });
 
 const gate = document.getElementById('authGate');
-const googleBtn = document.getElementById('googleSignInBtn');
+const step1 = document.getElementById('authStep1');
+const step2 = document.getElementById('authStep2');
+const emailInput = document.getElementById('authEmail');
+const sendBtn = document.getElementById('sendLinkBtn');
+const resendBtn = document.getElementById('resendLinkBtn');
+const sentToEl = document.getElementById('authSentTo');
 const errEl = document.getElementById('authError');
+const EMAIL_KEY = 'mmt-signin-email';
 
 function showAuthError(msg){
   if(!errEl) return;
@@ -1520,22 +1537,46 @@ function showAuthError(msg){
 }
 function clearAuthError(){ if(errEl){ errEl.style.display='none'; errEl.textContent=''; } }
 
-// Using signInWithRedirect (not signInWithPopup): popups are unreliable specifically in installed iOS
-// PWAs (added-to-home-screen apps, which is exactly how this app is used) since there's no browser chrome
-// for a popup to open in. Redirect navigates away to sign in, then back — works everywhere, no exceptions.
-googleBtn?.addEventListener('click', () => {
-  clearAuthError();
-  signInWithRedirect(fbAuth, new GoogleAuthProvider()).catch((e) => {
-    console.error('Google sign-in failed:', e);
-    showAuthError('Sign-in failed: ' + (e?.message || e));
-  });
-});
+// Email link (passwordless) sign-in — chosen over Google's redirect/popup sign-in because Safari's
+// "Prevent Cross-Site Tracking" (on by default on every iPhone) blocks the storage handoff Google's
+// flow depends on, making it fail silently. This flow never leaves the app's own domain, so it's immune
+// to that. Standard Firebase pattern: send a link -> user taps it -> same-origin sign-in completes.
+const actionCodeSettings = { url: location.href.split('?')[0], handleCodeInApp: true };
 
-// Completes the sign-in after Google redirects back to this page.
-getRedirectResult(fbAuth).catch((e) => {
-  console.error('Sign-in redirect failed:', e);
-  showAuthError('Sign-in failed: ' + (e?.message || e));
-});
+async function sendLink(email){
+  clearAuthError();
+  if(!email || !email.includes('@')){ showAuthError('Enter a valid email address.'); return; }
+  try{
+    await sendSignInLinkToEmail(fbAuth, email, actionCodeSettings);
+    localStorage.setItem(EMAIL_KEY, email);
+    sentToEl.textContent = email;
+    step1.style.display = 'none';
+    step2.style.display = '';
+  }catch(e){
+    console.error('Send sign-in link failed:', e);
+    showAuthError('Couldn’t send the link: ' + (e?.message || e));
+  }
+}
+sendBtn?.addEventListener('click', () => sendLink((emailInput.value||'').trim()));
+resendBtn?.addEventListener('click', () => sendLink(localStorage.getItem(EMAIL_KEY)||''));
+emailInput?.addEventListener('keydown', (e) => { if(e.key==='Enter') sendLink((emailInput.value||'').trim()); });
+
+// On load: if this page WAS opened from the emailed link, complete the sign-in.
+if(isSignInWithEmailLink(fbAuth, window.location.href)){
+  let email = localStorage.getItem(EMAIL_KEY);
+  if(!email) email = window.prompt('Confirm the email you used to request the sign-in link:');
+  if(email){
+    signInWithEmailLink(fbAuth, email, window.location.href)
+      .then(() => {
+        localStorage.removeItem(EMAIL_KEY);
+        history.replaceState(null, '', window.location.href.split('?')[0]); // strip the sign-in params from the URL
+      })
+      .catch((e) => {
+        console.error('Email link sign-in failed:', e);
+        showAuthError('That link didn’t work: ' + (e?.message || e));
+      });
+  }
+}
 
 onAuthStateChanged(fbAuth, (user) => {
   window.currentUser = user;
