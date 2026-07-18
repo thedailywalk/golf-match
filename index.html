@@ -428,6 +428,26 @@
   .lg-enter{margin-left:auto;font-weight:800;color:var(--gold)}
   .home-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
   .home-actions .btn{width:100%;padding:13px}
+  .lg-lobby{font-weight:800;color:var(--muted);border:1px solid var(--line);border-radius:7px;padding:2px 9px;cursor:pointer}
+
+  /* Lobby */
+  .lob-meta{display:flex;align-items:center;gap:10px;margin:14px 16px 2px;flex-wrap:wrap}
+  .lob-event{font-size:12px;color:var(--muted);font-weight:700}
+  .lob-sec{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:18px 16px 8px}
+  .lob-code{display:flex;align-items:center;gap:8px;margin:0 16px;flex-wrap:wrap}
+  .lob-row{display:flex;align-items:center;gap:11px;margin:0 16px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .lob-row:last-of-type{border-bottom:0}
+  .lob-dot{flex:none;width:10px;height:10px;border-radius:50%}
+  .lob-dot.ready{background:var(--good)} .lob-dot.warn{background:var(--gold)}
+  .lob-t{flex:1;min-width:0}
+  .lob-t b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lob-t span{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  .lob-pill{flex:none;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px}
+  .lob-pill.ready{background:rgba(31,157,77,.14);color:var(--good)}
+  .lob-pill.warn{background:rgba(244,183,64,.2);color:#8a6100}
+  .lob-host{display:flex;gap:8px;flex-wrap:wrap;margin:0 16px}
+  .btn.danger{color:var(--bad);border-color:rgba(209,73,59,.4)}
+  @media (prefers-color-scheme:dark){ .lob-pill.warn{color:var(--gold)} }
 
   /* Final match recap */
   .recapcard{position:relative;overflow:hidden;margin-top:14px;background:var(--card);border:2px solid var(--gold);
@@ -682,6 +702,14 @@
   </div>
   <div id="leagueSheetErr" class="autherr" style="display:none;margin:0 16px 16px"></div>
   <div style="height:12px"></div>
+</div>
+
+<div class="sheet-bg" id="lobbySheetBg"></div>
+<div class="sheet" id="lobbySheet">
+  <div class="grip"></div>
+  <div class="sheet-h"><div class="t" id="lobbyTitle">Lobby</div><button class="btn ghost sm" id="lobbyClose">Close</button></div>
+  <div id="lobbyBody"></div>
+  <div style="height:14px"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1396,12 +1424,14 @@ function renderHome(){
     return `<div class="lgcard${id===ACTIVE_LEAGUE?' active':''}" data-lg="${esc(id)}">
       <div class="lg-top"><span class="lg-name">${esc(m.name||id)}</span>${id===ACTIVE_LEAGUE?'<span class="lg-live">Active</span>':''}</div>
       <div class="lg-teams"><b>${esc(nA)}</b> vs <b>${esc(nB)}</b></div>
-      <div class="lg-foot">${m.code?`<span class="lg-code" data-code="${esc(m.code)}" title="Tap to copy invite code">${esc(m.code)}</span>`:''}<span class="lg-enter">Enter →</span></div>
+      <div class="lg-foot">${m.code?`<span class="lg-code" data-code="${esc(m.code)}" title="Tap to copy invite code">${esc(m.code)}</span>`:''}<span class="lg-lobby" data-lobby="${esc(id)}">Lobby</span><span class="lg-enter">Enter →</span></div>
     </div>`;
   }).join('');
   host.querySelectorAll('.lgcard').forEach(c=> c.onclick=(ev)=>{
     const codeEl=ev.target.closest('.lg-code');
     if(codeEl){ ev.stopPropagation(); navigator.clipboard?.writeText(codeEl.dataset.code).then(()=>toast('Invite code copied — text it to a friend 🔑')); return; }
+    const lobEl=ev.target.closest('.lg-lobby');
+    if(lobEl){ ev.stopPropagation(); openLobby(lobEl.dataset.lobby); return; }
     enterLeague(c.dataset.lg);
   });
 }
@@ -1421,6 +1451,88 @@ function openLeagueSheet(mode){
 }
 function closeLeagueSheet(){ $('#leagueSheetBg').classList.remove('show'); $('#leagueSheet').classList.remove('show'); }
 function leagueSheetError(msg){ const err=$('#leagueSheetErr'); err.textContent=msg; err.style.display='block'; }
+
+/* ---------------- Tournament lobby: readiness + invite + host controls, per league ---------------- */
+let lobbyLeagueId=null;
+async function openLobby(id){
+  if(!window.__league){ toast('Sign in first'); return; }
+  lobbyLeagueId=id;
+  $('#lobbyTitle').textContent='Lobby';
+  $('#lobbyBody').innerHTML='<div class="home-empty">Loading…</div>';
+  $('#lobbySheetBg').classList.add('show'); $('#lobbySheet').classList.add('show');
+  try{
+    const res=await window.__league.getFull(id);
+    if(!res.exists){ $('#lobbyBody').innerHTML='<div class="home-empty">This league no longer exists.</div>'; return; }
+    renderLobby(id, res.data);
+  }catch(e){ $('#lobbyBody').innerHTML='<div class="home-empty">Couldn’t load the lobby — check your connection.</div>'; }
+}
+function closeLobby(){ $('#lobbySheetBg').classList.remove('show'); $('#lobbySheet').classList.remove('show'); lobbyLeagueId=null; }
+function lobbyTeamStatus(d, side){
+  const t=d.teams?.[side]||{};
+  const joined=(d.meta?.members?.[side]) || (t.name && t.name!=='Waiting for opponent');
+  const count=(t.players||[]).filter(p=>p&&String(p).trim()).length;
+  if(!joined) return {name:t.name||'Open slot', cls:'warn', pill:'Waiting', sub:'Send them the invite code'};
+  if(count<6) return {name:t.name, cls:'warn', pill:count+'/6', sub:'Lineup incomplete'};
+  return {name:t.name, cls:'ready', pill:'Ready', sub:'Roster set · 6 players'};
+}
+function renderLobby(id, d){
+  const meta=d.meta||{}; const uid=window.currentUser?.uid;
+  $('#lobbyTitle').textContent=meta.name||'Lobby';
+  const members=meta.members||{};
+  const isHost = meta.createdBy ? meta.createdBy===uid
+    : (Object.keys(members).length ? Object.values(members).includes(uid) : true);  // legacy league: members manage it
+  const A=lobbyTeamStatus(d,'A'), B=lobbyTeamStatus(d,'B');
+  const fmt = (meta.format||'h2h')==='h2h' ? 'Head-to-head' : meta.format;
+  const opponentPresent = !!members.B || (d.teams?.B?.name && d.teams.B.name!=='Waiting for opponent');
+  $('#lobbyBody').innerHTML=`
+    <div class="lob-meta">
+      <span class="wkb-pill">${esc(fmt)}</span>
+      <span class="lob-event">${esc(EVENT.name||'Next tournament')}${EVENT.status==='in'?' · LIVE':EVENT.status==='post'?' · Final':''}</span>
+    </div>
+    <div class="lob-sec">Invite</div>
+    <div class="lob-code">
+      <span class="lg-code" style="font-size:15px;padding:6px 14px">${esc(meta.code||'—')}</span>
+      <button class="btn ghost sm" id="lobCopy">Copy</button>
+      <button class="btn sm" id="lobShare">📤 Share invite</button>
+    </div>
+    <div class="lob-sec">Teams</div>
+    <div class="lob-row"><span class="lob-dot ${A.cls}"></span><div class="lob-t"><b>${esc(A.name)}</b><span>${esc(A.sub)}</span></div><span class="lob-pill ${A.cls}">${esc(A.pill)}</span></div>
+    <div class="lob-row"><span class="lob-dot ${B.cls}"></span><div class="lob-t"><b>${esc(B.name)}</b><span>${esc(B.sub)}</span></div><span class="lob-pill ${B.cls}">${esc(B.pill)}</span></div>
+    ${isHost?`
+    <div class="lob-sec">Host controls</div>
+    <div class="lob-host">
+      <button class="btn ghost sm" id="lobRename">✏️ Rename league</button>
+      ${opponentPresent?`<button class="btn ghost sm" id="lobKick">Remove opponent</button>`:''}
+      <button class="btn ghost sm danger" id="lobDelete">Delete league</button>
+    </div>`:''}
+    <div class="field" style="margin-top:14px"><button class="btn" id="lobEnter" style="width:100%">Enter league →</button></div>`;
+  $('#lobCopy').onclick=()=>navigator.clipboard?.writeText(meta.code||'').then(()=>toast('Code copied 🔑'));
+  $('#lobShare').onclick=()=>{
+    const txt=`Join my golf league “${meta.name}” on Major Match! Code: ${meta.code} — ${location.origin+location.pathname}`;
+    if(navigator.share) navigator.share({text:txt}).catch(()=>{});
+    else navigator.clipboard?.writeText(txt).then(()=>toast('Invite copied — text it to them 📋'));
+  };
+  $('#lobEnter').onclick=()=>{ closeLobby(); enterLeague(id); };
+  const rn=$('#lobRename'); if(rn) rn.onclick=async ()=>{
+    const name=(prompt('New league name:', meta.name)||'').trim(); if(!name) return;
+    await window.__league.rename(id,name); toast('Renamed ✓'); openLobby(id); renderHome();
+  };
+  const kk=$('#lobKick'); if(kk) kk.onclick=async ()=>{
+    if(!confirm(`Remove ${d.teams?.B?.name||'the opponent'} from this league? Their slot reopens and they can re-join with the code.`)) return;
+    await window.__league.removeOpponent(id); toast('Opponent removed'); openLobby(id); renderHome();
+  };
+  const dl=$('#lobDelete'); if(dl) dl.onclick=async ()=>{
+    if(!confirm(`Delete “${meta.name}” for everyone? This can’t be undone.`)) return;
+    await window.__league.deleteLeague(id); toast('League deleted');
+    closeLobby();
+    if(id===ACTIVE_LEAGUE){
+      const rest=(window.__myLeagues||[]).filter(x=>x!==id);
+      localStorage.setItem('mmt-active-league', rest[0]||'major-match-2026');
+      location.reload(); return;
+    }
+    renderHome();
+  };
+}
 
 function renderWhoami(){
   const el=$('#whoami'); if(!el) return;
@@ -2002,6 +2114,8 @@ $('#createLeagueBtn').onclick=()=>openLeagueSheet('create');
 $('#joinLeagueBtn').onclick=()=>openLeagueSheet('join');
 $('#leagueSheetClose').onclick=closeLeagueSheet;
 $('#leagueSheetBg').onclick=closeLeagueSheet;
+$('#lobbyClose').onclick=closeLobby;
+$('#lobbySheetBg').onclick=closeLobby;
 $('#lgCreateGo').onclick=async ()=>{
   const name=($('#lgName').value||'').trim(), team=($('#lgTeam').value||'').trim();
   if(!name){ leagueSheetError('Give the league a name.'); return; }
@@ -2068,7 +2182,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-i';
+const BUILD_ID='2026-07-18-j';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
@@ -2095,7 +2209,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp,
-  collection, addDoc, query, orderBy, limit, where, getDocs, arrayUnion
+  collection, addDoc, query, orderBy, limit, where, getDocs, arrayUnion, arrayRemove, deleteDoc, deleteField
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -2210,11 +2324,15 @@ async function ensureUserAndLeagues(user){
       await setDoc(uref,{ email:user.email||'', leagues:arrayUnion('major-match-2026'), updatedAt:serverTimestamp() },{merge:true});
     }
     const ids=(await getDoc(uref)).data().leagues||[];
-    window.__myLeagues=ids;
-    const metas={};
+    const metas={}, healthy=[];
     for(const id of ids){
       const ld=await getDoc(doc(fbDb,'leagues',id));
-      if(!ld.exists()) continue;
+      if(!ld.exists()){
+        // self-heal: a league that was deleted — drop the dead reference from my registry
+        await setDoc(doc(fbDb,'users',user.uid),{ leagues:arrayRemove(id) },{merge:true}).catch(()=>{});
+        continue;
+      }
+      healthy.push(id);
       const d=ld.data();
       let meta=d.meta;
       if(!meta || !meta.code){
@@ -2232,12 +2350,32 @@ async function ensureUserAndLeagues(user){
       metas[id]={ name:meta.name, code:meta.code, format:meta.format||'h2h',
         teamA:d.teams?.A?.name||'Team A', teamB:d.teams?.B?.name||'Team B' };
     }
+    window.__myLeagues=healthy;   // only leagues whose docs actually exist — dead refs never reach the UI
     window.__leagueMetas=metas;
     document.dispatchEvent(new CustomEvent('mmt:leaguesUpdated'));
   }catch(e){ console.error('League registry failed:', e); }
 }
 
 window.__league = {
+  refresh(){ const u=fbAuth.currentUser; if(u) return ensureUserAndLeagues(u); },
+  async getFull(id){
+    const ld=await getDoc(doc(fbDb,'leagues',id));
+    return ld.exists()? {exists:true, data:ld.data()} : {exists:false};
+  },
+  async rename(id, name){
+    await setDoc(doc(fbDb,'leagues',id),{ meta:{name} },{merge:true});
+    await this.refresh();
+  },
+  async removeOpponent(id){
+    await setDoc(doc(fbDb,'leagues',id),{ teams:{B:{name:'Waiting for opponent'}}, meta:{members:{B:deleteField()}} },{merge:true});
+    await this.refresh();
+  },
+  async deleteLeague(id){
+    const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
+    await deleteDoc(doc(fbDb,'leagues',id));
+    await setDoc(doc(fbDb,'users',uid),{ leagues:arrayRemove(id) },{merge:true});
+    await this.refresh();
+  },
   async create(name, teamName){
     const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
     const id='lg-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
