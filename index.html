@@ -1434,6 +1434,26 @@ if('serviceWorker' in navigator){
     location.reload();
   });
 }
+
+/* foreground version check — covers the case the service worker can't: iOS resuming the app from
+   the background wakes the OLD page from memory without any navigation, so network-first fetching
+   never runs. On each return to foreground (throttled), fetch the live index.html and compare its
+   BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
+const BUILD_ID='2026-07-18-a';
+let lastVerCheck=0, verReloaded=false;
+async function checkForNewVersion(){
+  const now=Date.now();
+  if(verReloaded || now-lastVerCheck<120000) return;   // at most once per 2 minutes
+  lastVerCheck=now;
+  try{
+    const res=await fetch('index.html',{cache:'no-store'});
+    if(!res.ok) return;
+    const txt=await res.text();
+    const m=txt.match(/BUILD_ID='([^']+)'/);
+    if(m && m[1]!==BUILD_ID){ verReloaded=true; toast('Updating to the latest version…'); setTimeout(()=>location.reload(),600); }
+  }catch(e){/* offline — ignore */}
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkForNewVersion(); });
 </script>
 
 <script type="module">
