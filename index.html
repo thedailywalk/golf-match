@@ -65,7 +65,16 @@
   /* Match summary */
   .summary{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
   .scoreband{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 12px;gap:6px}
-  .tside{text-align:center;min-width:0}
+  .tside{text-align:center;min-width:0;position:relative}
+  .crown{position:absolute;top:-24px;left:50%;font-size:26px;opacity:0;pointer-events:none;z-index:6;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));transition:opacity .35s ease;
+    animation:crownFloat 2.4s ease-in-out infinite;transform-origin:center}
+  .crown.show{opacity:1}
+  @keyframes crownFloat{
+    0%,100%{transform:translate(-50%,0) rotate(-7deg)}
+    50%{transform:translate(-50%,-7px) rotate(7deg)}
+  }
+  @media (prefers-reduced-motion:reduce){ .crown{animation:none;transform:translate(-50%,0)} }
   .tside .nm{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tside .tot{font-size:40px;font-weight:900;letter-spacing:-1px;line-height:1;margin-top:6px}
   .tside .thru{font-size:11px;color:var(--muted);margin-top:4px;height:14px}
@@ -86,6 +95,16 @@
 
   /* Notify bar */
   .notifybar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,rgba(244,183,64,.05))}
+  .projection{padding:11px 14px 12px;border-top:1px solid var(--line)}
+  .proj-row{display:flex;align-items:center;gap:9px}
+  .proj-pct{font-size:13px;font-weight:900;min-width:34px;color:var(--text)}
+  .proj-pct.a{text-align:right}
+  .proj-bar{flex:1;height:9px;border-radius:5px;overflow:hidden;display:flex;background:var(--paper);border:1px solid var(--line)}
+  .proj-fillA{height:100%;background:var(--navy);transition:width .5s ease}
+  .proj-fillB{height:100%;background:var(--gold);transition:width .5s ease}
+  .proj-caption{margin-top:7px;font-size:12px;color:var(--muted);text-align:center}
+  .proj-caption b{color:var(--text)}
+  @media (prefers-color-scheme:dark){ .proj-fillA{background:#5b7ba8} }
   .notifybar .txt{flex:1;font-size:12px;color:var(--muted)}
   .btn{appearance:none;border:0;border-radius:11px;padding:9px 13px;font-weight:800;font-size:13px;cursor:pointer;background:var(--gold);color:#3a2a00}
   .btn:active{transform:scale(.97)}
@@ -134,7 +153,9 @@
   .wkb-top{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800}
   .wkb-lock{font-size:12px;font-weight:800;color:var(--gold)}
   .wkb-sub{font-size:12px;color:var(--muted);margin:6px 0 11px;line-height:1.45}
-  .wkb-actions{display:flex;gap:8px}
+  .wkb-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .wkb-actions:last-child{margin-bottom:0}
+  .wkb-syncnote{font-size:11.5px;color:var(--muted);margin:2px 0 10px;line-height:1.4}
 
   /* Who's phone is this */
   #whoami{display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 11px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
@@ -306,6 +327,7 @@
   <div class="summary">
     <div class="scoreband">
       <div class="tside">
+        <span class="crown" id="crownA">👑</span>
         <img class="tavatar" id="avA" alt="">
         <div class="nm" id="sA">Team A</div>
         <div class="tot" id="totA">—</div>
@@ -317,6 +339,7 @@
         <div class="lead-pill tie" id="leadPill">—</div>
       </div>
       <div class="tside">
+        <span class="crown" id="crownB">👑</span>
         <img class="tavatar" id="avB" alt="">
         <div class="nm" id="sB">Team B</div>
         <div class="tot" id="totB">—</div>
@@ -324,6 +347,7 @@
         <div class="yourtag" id="yourB"></div>
       </div>
     </div>
+    <div class="projection" id="projection"></div>
     <div class="notifybar">
       <div class="txt" id="notifyTxt">Get a buzz when your team's score moves.</div>
       <button class="btn sm" id="notifyBtn">🔔 Notify me</button>
@@ -504,8 +528,13 @@ function remove7(side){
 function lockLineups(){
   const a=validStarters('A').length, b=validStarters('B').length;
   if((a<4||b<4) && !confirm(`Lock now? A team without 4 starters takes +10 per empty slot.\n\n${S.teams.A.name}: ${a}/4\n${S.teams.B.name}: ${b}/4`)) return;
+  // roster players whose Round 2 isn't finished yet -> their snapshot isn't final (still live).
+  // deterministic thruFri covers everyone else, so both phones will always land on the same numbers.
+  const roster=[...S.teams.A.players,...S.teams.B.players,S.roster7.A,S.roster7.B].filter(Boolean);
+  const notFinal=roster.filter(p=>{ const l=LIVE[norm(p)]; return l && l.thruFri==null; });
+  if(notFinal.length && !confirm(`${notFinal.length} player(s) haven't finished Round 2 yet, so their base score isn't final:\n\n${notFinal.join(', ')}\n\nLock anyway? (Their base will use the live score for now — everyone should match once Round 2 wraps up.)`)) return;
   const snap={};
-  for(const k in LIVE){ const v=LIVE[k].toPar; if(v!==null&&v!==undefined) snap[k]=v; }
+  for(const k in LIVE){ const l=LIVE[k]; const v=(l.thruFri!=null)?l.thruFri:l.toPar; if(v!==null&&v!==undefined) snap[k]=v; }
   S.cutSnapshot=snap; S.locked=true; save(); render(); toast('Weekend lineups locked 🔒');
 }
 function unlockLineups(){ if(confirm('Unlock the weekend roster? Scores will recompute live until you lock again.')){ S.locked=false; save(); render(); } }
@@ -523,10 +552,15 @@ function render(){
 
   // lead pill (lower is better)
   const pill=$('#leadPill');
+  let leader=null;
   if(tA.counted && tB.counted){
     if(tA.sum===tB.sum){ pill.textContent='All square'; pill.className='lead-pill tie'; }
-    else{ const lead = tA.sum<tB.sum? 'A':'B'; const diff=Math.abs(tA.sum-tB.sum); pill.textContent=`${S.teams[lead].name.split(' ')[0]} +${diff}`; pill.className='lead-pill'; }
+    else{ const lead = tA.sum<tB.sum? 'A':'B'; const diff=Math.abs(tA.sum-tB.sum); pill.textContent=`${S.teams[lead].name.split(' ')[0]} +${diff}`; pill.className='lead-pill'; leader=lead; }
   } else { pill.textContent='—'; pill.className='lead-pill tie'; }
+  // floating crown hovers over whichever team currently leads (hidden on a tie / no scores yet)
+  const cA=$('#crownA'), cB=$('#crownB');
+  if(cA) cA.classList.toggle('show', leader==='A');
+  if(cB) cB.classList.toggle('show', leader==='B');
 
   $('#yourA').textContent = S.mine==='A'? '★ My team':'';
   $('#yourB').textContent = S.mine==='B'? '★ My team':'';
@@ -544,6 +578,7 @@ function render(){
   else { st.textContent = EVENT.statusText||'Scheduled'; st.className='badge'; }
 
   renderWhoami();
+  renderProjection();
   renderWeekendBanner();
   renderTeams();
 
@@ -699,6 +734,57 @@ function summaryLine(side){
   const lock = (t.mode==='weekend') ? '🔒 weekend' : '';
   return [play, lock, pen].filter(Boolean).join(' · ');
 }
+
+/* ---------------- Live win projection + holes remaining ---------------- */
+// Holes left today for one player: 0 if they're out of the tournament or done for the day,
+// 18-minus-holes-played if they're mid-round, else a full round assumed ahead.
+function holesRemaining(name){
+  if(EVENT.status==='post') return 0;                 // whole event is over
+  const l=LIVE[norm(name)]; if(!l) return 18;          // no data yet -> assume a full round ahead
+  if(l.cutStatus==='missed') return 0;                 // out of the event, no more holes for them
+  if(l.live){
+    const cur = (l.perHole&&l.perHole.length) ? l.perHole[l.perHole.length-1] : null;
+    const played = cur ? cur.holes.length : (l.thruNum||0);
+    return Math.max(0, 18-played);
+  }
+  if(l.done) return 0;                                 // finished their round for now
+  return 18;                                           // hasn't teed off yet today
+}
+// Projected win % from the current stroke margin vs. the combined uncertainty of holes left.
+// Heuristic, not a scientific model: treats each remaining hole as ~1 stroke of variance and
+// runs the score gap through a logistic curve (a standard, simple stand-in for a normal CDF).
+function matchProjection(){
+  if(S.sync==='off') return null;
+  const tA=teamTotal('A'), tB=teamTotal('B');
+  if(!tA.counted || !tB.counted) return null;
+  const rosterA = weekendScoring() ? validStarters('A') : S.teams.A.players;
+  const rosterB = weekendScoring() ? validStarters('B') : S.teams.B.players;
+  const hA = rosterA.reduce((s,p)=>s+holesRemaining(p),0);
+  const hB = rosterB.reduce((s,p)=>s+holesRemaining(p),0);
+  const margin = tB.sum - tA.sum;               // positive => A currently ahead
+  const totalHoles = hA+hB;
+  const varTotal = 1.0*totalHoles;              // ~1 stroke of variance per remaining hole
+  let probA;
+  if(varTotal<=0){ probA = margin>0?100:(margin<0?0:50); }
+  else{ const z = margin/Math.sqrt(varTotal); probA = Math.round(100/(1+Math.exp(-1.702*z))); }
+  probA = Math.max(0, Math.min(100, probA));
+  return { probA, probB:100-probA, totalHoles };
+}
+function renderProjection(){
+  const el=$('#projection'); if(!el) return;
+  const proj=matchProjection();
+  if(!proj){ el.style.display='none'; return; }
+  el.style.display='';
+  const favSide = proj.probA===proj.probB ? null : (proj.probA>proj.probB?'A':'B');
+  const favTxt = favSide ? `<b>${esc(S.teams[favSide].name)}</b> favored ${Math.max(proj.probA,proj.probB)}%` : 'Dead even';
+  el.innerHTML = `
+    <div class="proj-row">
+      <span class="proj-pct a">${proj.probA}%</span>
+      <div class="proj-bar"><div class="proj-fillA" style="width:${proj.probA}%"></div><div class="proj-fillB" style="width:${proj.probB}%"></div></div>
+      <span class="proj-pct b">${proj.probB}%</span>
+    </div>
+    <div class="proj-caption">${favTxt} to win · ${proj.totalHoles} hole${proj.totalHoles===1?'':'s'} remaining</div>`;
+}
 function renderWhoami(){
   const el=$('#whoami'); if(!el) return;
   el.innerHTML=`<span class="whoami-label">📱 My team</span>
@@ -717,6 +803,8 @@ function renderWeekendBanner(){
     return;
   }
   el.style.display='';
+  const oppSide=S.mine==='A'?'B':'A';
+  const haveOpp = (S.startWknd[oppSide]||[]).length>0;
   el.innerHTML=`<div class="wkbanner">
     <div class="wkb-top"><b>Weekend lineups</b>${S.locked?'<span class="wkb-lock">🔒 Locked</span>':''}</div>
     <div class="wkb-sub">${S.locked
@@ -725,11 +813,45 @@ function renderWeekendBanner(){
     <div class="wkb-actions">${S.locked
       ? `<button class="btn sm" id="copyCfgBtn">📋 Copy robot config</button><button class="btn ghost sm" id="unlockBtn">Unlock</button>`
       : `<button class="btn sm" id="lockBtn">🔒 Lock weekend lineups</button>`}${(EVENT.round||0)<3 ? `<button class="btn ghost sm" id="exitWkBtn">← Rounds 1–2</button>` : ''}</div>
+    <div class="wkb-syncnote">${haveOpp
+        ? `✓ ${S.teams[oppSide].name}'s picks are loaded on this phone`
+        : `⚠️ This phone doesn't know ${S.teams[oppSide].name}'s picks yet — import them below so scores match on both phones`}</div>
+    <div class="wkb-actions">
+      <button class="btn ghost sm" id="sharePicksBtn">📤 Share my picks</button>
+      <button class="btn ghost sm" id="importPicksBtn">📥 Import their picks</button>
+    </div>
   </div>`;
   const lb=$('#lockBtn'); if(lb) lb.onclick=lockLineups;
   const ub=$('#unlockBtn'); if(ub) ub.onclick=unlockLineups;
   const cb=$('#copyCfgBtn'); if(cb) cb.onclick=exportRobotConfig;
   const xb=$('#exitWkBtn'); if(xb) xb.onclick=()=>{ S.planWknd=false; S.locked=false; save(); render(); toast('Back to Rounds 1–2 — all 6 count'); };
+  $('#sharePicksBtn').onclick=shareMyPicks;
+  $('#importPicksBtn').onclick=importTheirPicks;
+}
+// Two phones, no shared server: each person's starter picks live only in their own phone's storage.
+// "Share" packages your picks as a short code; the other person pastes it in "Import" so both phones
+// agree on both rosters (and therefore compute the same penalties/totals).
+function shareMyPicks(){
+  const side=S.mine;
+  const payload={ mmt:1, side, team:S.teams[side].name, starters:S.startWknd[side]||[], seventh:S.roster7[side]||'' };
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const text=`My ${S.teams[side].name} weekend picks — paste this into "Import their picks":\n${code}`;
+  if(navigator.share){ navigator.share({text}).catch(()=>{}); }
+  else if(navigator.clipboard?.writeText){ navigator.clipboard.writeText(code).then(()=>toast('Copied — text it to them, they tap "Import their picks"')); }
+  else prompt('Copy this and send it to them:', code);
+}
+function importTheirPicks(){
+  const raw=(prompt('Paste the code they sent you:')||'').trim();
+  if(!raw) return;
+  let payload;
+  try{ payload=JSON.parse(decodeURIComponent(escape(atob(raw.replace(/^.*\n/,''))))); }
+  catch(e){ toast('That code didn’t look right — copy the whole thing and try again'); return; }
+  if(!payload||payload.mmt!==1||!payload.side){ toast('That code didn’t look right'); return; }
+  if(payload.side===S.mine){ toast('That’s your own picks, not theirs — ask them to tap "Share my picks" on their phone'); return; }
+  S.startWknd[payload.side]=payload.starters||[];
+  S.roster7[payload.side]=payload.seventh||'';
+  save(); render();
+  toast(`Loaded ${payload.team}'s picks ✓`);
 }
 function exportRobotConfig(){
   const mine=S.mine, opp=(mine==='A'?'B':'A');
@@ -969,10 +1091,23 @@ function parseEvent(ev){
     const stBlob = `${cs.type?.name||''} ${cs.type?.description||''} ${cs.displayValue||''} ${cs.position?.displayName||''}`;
     const missed = /\bcut\b|withdraw|\bwd\b|disqualif|\bdq\b/i.test(stBlob);
     const cutStatus = missed ? 'missed' : ((EVENT.round||0)>=3 && toNum(c.score)!==null ? 'made' : null);
+    // deterministic "through Friday" total = sum of relative-to-par across every hole in rounds 1 & 2.
+    // Unlike live to-par, this is a fixed historical fact once both rounds finish, so every phone
+    // that locks — now or later — computes the exact same number. Finalizes once R1 is complete AND
+    // (R2 is complete OR the player is confirmed out, since cut/WD players never play R2 further).
+    let thruFri=null;
+    {
+      const r1=perHole.find(r=>r.round===1), r2=perHole.find(r=>r.round===2);
+      const r1Done = r1 && r1.holes.length>=18;
+      const r2Done = r2 && r2.holes.length>=18;
+      if(r1Done && (r2Done || missed)){
+        thruFri = r1.holes.reduce((s,h)=>s+h.relN,0) + (r2? r2.holes.reduce((s,h)=>s+h.relN,0) : 0);
+      }
+    }
     const entry={
       name: c.athlete?.displayName||'', nm,
       toPar: toNum(c.score),
-      thru, thruNum, hole, live, done, cutStatus,
+      thru, thruNum, hole, live, done, cutStatus, thruFri,
       tee: (!live&&!done)? (cs.displayValue||cs.type?.shortDetail||'') : '',
       rounds, perHole, card, headshot, pos:'', order: c.order||999
     };
