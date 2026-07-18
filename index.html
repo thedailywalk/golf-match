@@ -137,6 +137,25 @@
   .proj-fillB{height:100%;background:var(--gold);transition:width .5s ease}
   .proj-caption{margin-top:7px;font-size:12px;color:var(--muted);text-align:center}
   .proj-caption b{color:var(--text)}
+  .projection{cursor:pointer}
+  .why-hint{font-weight:800;color:var(--gold)}
+  .whypanel{padding:4px 14px 14px;border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(244,183,64,.05),transparent)}
+  .why-title{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:10px 0 7px}
+  .why-move{font-size:13.5px;font-weight:800;margin-bottom:2px}
+  .why-move .up{color:var(--good)} .why-move .down{color:var(--bad)}
+  .why-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12.5px;border-bottom:1px solid var(--line)}
+  .why-row:last-child{border-bottom:0}
+  .why-arrow{flex:none;font-weight:900;width:16px;text-align:center}
+  .why-arrow.up{color:var(--good)} .why-arrow.down{color:var(--bad)}
+  .why-row .tl-side{flex:none}
+  .why-txt{flex:1;min-width:0;color:var(--text)}
+  .why-txt i{font-style:normal;color:var(--muted)}
+  .why-note{font-size:12px;color:var(--muted);line-height:1.5;padding:6px 0}
+  .why-contrib{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .why-ctile{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:8px 11px}
+  .why-ctile span{display:block;font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .why-ctile b{font-size:13px}
+  .why-ctile i{font-style:normal;font-size:11px;color:var(--muted);margin-left:4px}
   @media (prefers-color-scheme:dark){ .proj-fillA{background:#5b7ba8} }
   .notifybar .txt{flex:1;font-size:12px;color:var(--muted)}
   .btn{appearance:none;border:0;border-radius:11px;padding:9px 13px;font-weight:800;font-size:13px;cursor:pointer;background:var(--gold);color:#3a2a00}
@@ -392,6 +411,25 @@
   .npswitch.on{background:var(--good);border-color:var(--good)}
   .npswitch.on::after{left:23px}
   @media (prefers-color-scheme:dark){ .np-seg button.on{background:var(--gold);color:#3a2a00} .npswitch::after{background:#e8eaed} }
+
+  /* Final match recap */
+  .recapcard{position:relative;overflow:hidden;margin-top:14px;background:var(--card);border:2px solid var(--gold);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 16px 16px;text-align:center}
+  .recap-kicker{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .recap-hero{font-size:23px;font-weight:900;margin:8px 0 2px;line-height:1.25}
+  .recap-score{font-size:14px;font-weight:800;color:var(--muted);margin-bottom:10px}
+  .recap-score b{color:var(--text)}
+  .recap-quip{font-size:13px;color:var(--muted);line-height:1.5;font-style:italic;margin:0 auto 14px;max-width:320px}
+  .recap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;text-align:left}
+  .recap-tile{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .recap-tile span{display:block;font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .recap-tile b{font-size:13.5px;font-weight:800;line-height:1.3}
+  .recap-tile i{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:1px}
+  .recap-actions{display:flex;gap:8px;justify-content:center}
+  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .confetti i{position:absolute;top:-14px;width:8px;height:12px;border-radius:2px;opacity:.95;animation:confall linear forwards}
+  @keyframes confall{to{transform:translateY(420px) rotate(540deg);opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .confetti{display:none} }
   .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:60;pointer-events:none;box-shadow:var(--shadow)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -456,6 +494,7 @@
   <div id="whoami"></div>
 
   <div id="matchView">
+  <div id="recapCard" class="recapcard" style="display:none"></div>
   <!-- Match summary -->
   <div class="summary">
     <div class="scoreband">
@@ -480,6 +519,7 @@
       </div>
     </div>
     <div class="projection" id="projection"></div>
+    <div class="whypanel" id="whyPanel" style="display:none"></div>
     <div class="notifybar">
       <div class="txt" id="notifyTxt">Get a buzz when your team's score moves.</div>
       <button class="btn sm" id="notifyBtn">🔔 Notify me</button>
@@ -773,7 +813,9 @@ function render(){
   else { st.textContent = EVENT.statusText||'Scheduled'; st.className='badge'; }
 
   renderWhoami();
+  renderRecap();
   renderProjection();
+  renderWhy();
   renderWeekendBanner();
   renderTeams();
 
@@ -981,7 +1023,61 @@ function renderProjection(){
       <div class="proj-bar"><div class="proj-fillA" style="width:${proj.probA}%"></div><div class="proj-fillB" style="width:${proj.probB}%"></div></div>
       <span class="proj-pct b">${proj.probB}%</span>
     </div>
-    <div class="proj-caption">${favTxt} to win · ${proj.totalHoles} hole${proj.totalHoles===1?'':'s'} remaining</div>`;
+    <div class="proj-caption">${favTxt} to win · ${proj.totalHoles} hole${proj.totalHoles===1?'':'s'} remaining · <span class="why-hint">Why ${whyOpen?'▴':'▾'}</span></div>`;
+}
+
+/* ---------------- "Why did this move?" — makes the win % explainable, not decorative ---------------- */
+let whyOpen=false;
+const WHY_IMPACT={ eagle:-2, birdie:-1, bogey:1, double:2 };   // strokes for the event's own team
+function renderWhy(){
+  const el=$('#whyPanel'); if(!el) return;
+  if(!whyOpen || S.sync!=='on'){ el.style.display='none'; return; }
+  el.style.display='';
+  const mine=S.mine, opp=mine==='A'?'B':'A';
+  const now=Date.now(), windowMs=60*60000;
+  // probability movement over the last hour (from Match Story history)
+  const pts=H.points.filter(p=>p.pa!=null);
+  let moveHtml='';
+  if(pts.length>=2){
+    const cur=pts[pts.length-1];
+    let ref=null;
+    for(const p of pts){ if(cur.t-p.t<=windowMs){ ref=p; break; } }   // earliest point inside the window
+    if(!ref || ref===cur) ref=pts[Math.max(0,pts.length-2)];
+    const myCur = mine==='A'?cur.pa:100-cur.pa;
+    const myRef = mine==='A'?ref.pa:100-ref.pa;
+    const d=myCur-myRef;
+    const cls=d>0?'up':(d<0?'down':'');
+    moveHtml=`<div class="why-move">${esc(S.teams[mine].name.split(' ')[0])} win chance: ${myRef}% → <span class="${cls}">${myCur}%</span> <i style="font-weight:600;color:var(--muted)">(last hour)</i></div>`;
+  }
+  // recent scoring events, framed from MY team's perspective
+  const recent=H.events.filter(e=> now-e.t<=windowMs && WHY_IMPACT[e.cat]!==undefined && (e.side==='A'||e.side==='B')).slice(-6).reverse();
+  const rows=recent.map(e=>{
+    const strokes=WHY_IMPACT[e.cat];
+    const helpsMe = (e.side===mine) ? strokes<0 : strokes>0;
+    const label = e.cat==='double'?'double bogey+':e.cat;
+    const team=(S.teams[e.side]?.name||'').split(' ')[0];
+    return `<div class="why-row"><span class="why-arrow ${helpsMe?'up':'down'}">${helpsMe?'▲':'▼'}</span><span class="tl-side ${e.side}"></span><span class="why-txt"><b>${esc(e.player||team)}</b> ${label} <i>(${esc(team)}) · ${fmtClock(e.t)}</i></span></div>`;
+  }).join('');
+  // structural context: active golfers left on each side
+  const countRoster=(side)=> (weekendScoring()? validStarters(side) : S.teams[side].players);
+  const act=(side)=> countRoster(side).filter(p=>LIVE[norm(p)]?.live).length;
+  const aM=act(mine), aO=act(opp);
+  let notes='';
+  if(!recent.length && moveHtml) notes+=`<div class="why-note">No scoring swings in the last hour — the change comes from holes running out, which makes the current margin ${aM+aO===0?'final':'harder to overturn'}.</div>`;
+  notes+=`<div class="why-note">${esc(S.teams[mine].name.split(' ')[0])} has <b>${aM}</b> golfer${aM===1?'':'s'} still on course · ${esc(S.teams[opp].name.split(' ')[0])} has <b>${aO}</b> — ${aM>aO?'more room to move the score':aM<aO?'less room than the other side':'even exposure'}.</div>`;
+  // biggest helper / biggest hurt on my side (today's scores among counting players)
+  const perf=countRoster(mine).map(p=>({p, s:LIVE[norm(p)]?.toPar})).filter(x=>x.s!=null).sort((a,b)=>a.s-b.s);
+  let contrib='';
+  if(perf.length>=2){
+    const hero=perf[0], anchor=perf[perf.length-1];
+    contrib=`<div class="why-contrib">
+      <div class="why-ctile"><span>Carrying the team</span><b>${esc(hero.p.split(' ').slice(-1)[0])}</b><i>${parPretty(hero.s)}</i></div>
+      <div class="why-ctile"><span>Weighing it down</span><b>${esc(anchor.p.split(' ').slice(-1)[0])}</b><i>${parPretty(anchor.s)}</i></div>
+    </div>`;
+  }
+  el.innerHTML = `${moveHtml||'<div class="why-note">Win-chance history builds as live play is recorded on this phone.</div>'}
+    ${rows?`<div class="why-title">What moved it</div>${rows}`:''}
+    <div class="why-title">The situation</div>${notes}${contrib}`;
 }
 /* ---------------- Chat tab (live via Firestore; messages arrive on window.__chatMessages) ---------------- */
 let chatUnread = 0;
@@ -1154,6 +1250,72 @@ function wireStoryCursor(pts){
   svg.addEventListener('pointermove',onMove);
   svg.addEventListener('pointerdown',onMove);
   svg.addEventListener('pointerleave',onLeave);
+}
+
+/* ---------------- Final match recap (appears once the tournament goes final) ---------------- */
+let confettiFired=false, recapQuip=null;
+function renderRecap(){
+  const el=$('#recapCard'); if(!el) return;
+  const tA=teamTotal('A'), tB=teamTotal('B');
+  const over = S.sync==='on' && EVENT.status==='post' && tA.counted && tB.counted;
+  if(!over){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='';
+  const tie = tA.sum===tB.sum;
+  const w = tA.sum<tB.sum?'A':'B', l = w==='A'?'B':'A';
+  const wN=S.teams[w].name, lN=S.teams[l].name, margin=Math.abs(tA.sum-tB.sum);
+  // player performances across both rosters (final to-par)
+  const perf=[];
+  for(const side of ['A','B']) for(const p of rosterList(side)){ const e=LIVE[norm(p)]; if(e&&e.toPar!=null) perf.push({p, side, s:e.toPar}); }
+  perf.sort((a,b)=>a.s-b.s);
+  const best=perf[0], worst=perf[perf.length-1];
+  const mvp=perf.find(x=>x.side===w);
+  // biggest single swing + largest lead, from the Match Story history
+  let swing=null, maxLead=null;
+  const pts=H.points;
+  for(let i=1;i<pts.length;i++){ const d0=pts[i-1].b-pts[i-1].a, d1=pts[i].b-pts[i].a; const ch=Math.abs(d1-d0); if(ch && (!swing||ch>swing.ch)) swing={ch, t:pts[i].t}; }
+  for(const q of pts){ const d=Math.abs(q.b-q.a); if(d && (!maxLead||d>maxLead.d)) maxLead={d, side:q.a<q.b?'A':'B', t:q.t}; }
+  if(!recapQuip){
+    const quips = tie? [
+      'A tie. Nobody wins, and the argument never ends.',
+      'All square. The rematch begins immediately.',
+    ] : [
+      `${lN} would like the record to show they were “building character.”`,
+      `${wN} take it. The group chat may never recover.`,
+      `Somewhere, ${lN} is already drafting excuses for next year.`,
+    ];
+    recapQuip = quips[Math.floor(Math.random()*quips.length)] + ' Official ruling: neither manager hit a single golf shot.';
+  }
+  const tiles=[];
+  if(!tie && mvp) tiles.push(['Match MVP', esc(mvp.p), `${esc(wN.split(' ').slice(0,3).join(' '))} · ${parPretty(mvp.s)}`]);
+  if(best) tiles.push(['Best golfer', esc(best.p), parPretty(best.s)]);
+  if(worst && perf.length>1) tiles.push(['Rough week', esc(worst.p), parPretty(worst.s)]);
+  if(swing) tiles.push(['Biggest swing', `${swing.ch} stroke${swing.ch===1?'':'s'}`, fmtDay(swing.t)+fmtClock(swing.t)]);
+  if(maxLead) tiles.push(['Largest lead', `${esc(S.teams[maxLead.side].name.split(' ')[0])} by ${maxLead.d}`, fmtDay(maxLead.t)+fmtClock(maxLead.t)]);
+  el.innerHTML=`<div class="confetti" id="recapConfetti"></div>
+    <div class="recap-kicker">${esc(EVENT.name||'Match')} · Final</div>
+    <div class="recap-hero">${tie?'🤝 All square':`🏆 ${esc(wN)} wins`}</div>
+    <div class="recap-score"><b>${parPretty(tA.sum)}</b> ${esc(S.teams.A.name.split(' ')[0])} · <b>${parPretty(tB.sum)}</b> ${esc(S.teams.B.name.split(' ')[0])}${tie?'':` · by ${margin}`}</div>
+    <div class="recap-quip">${esc(recapQuip)}</div>
+    <div class="recap-grid">${tiles.map(t=>`<div class="recap-tile"><span>${t[0]}</span><b>${t[1]}</b><i>${t[2]}</i></div>`).join('')}</div>
+    <div class="recap-actions"><button class="btn sm" id="recapShareBtn">📤 Share result</button></div>`;
+  $('#recapShareBtn').onclick=()=>{
+    const txt = tie
+      ? `${EVENT.name}: ${S.teams.A.name} and ${S.teams.B.name} finished ALL SQUARE at ${parPretty(tA.sum)}. ⛳`
+      : `${EVENT.name}: ${wN} beat ${lN} by ${margin} (${parPretty(w==='A'?tA.sum:tB.sum)} to ${parPretty(l==='A'?tA.sum:tB.sum)}). MVP: ${mvp?mvp.p:'—'} 🏆⛳`;
+    if(navigator.share) navigator.share({text:txt}).catch(()=>{});
+    else if(navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(()=>toast('Result copied 📋'));
+  };
+  if(!tie && !confettiFired){ confettiFired=true; fireConfetti(); }
+}
+function fireConfetti(){
+  const c=$('#recapConfetti'); if(!c) return;
+  const colors=['#f4b740','#0b2e4f','#1f9d4d','#d1493b','#2aa7a0','#f6c95d'];
+  let html='';
+  for(let i=0;i<40;i++){
+    html+=`<i style="left:${(Math.random()*100).toFixed(1)}%;background:${colors[i%colors.length]};animation-duration:${(2.2+Math.random()*2.4).toFixed(2)}s;animation-delay:${(Math.random()*1.2).toFixed(2)}s"></i>`;
+  }
+  c.innerHTML=html;
+  setTimeout(()=>{ const cc=$('#recapConfetti'); if(cc) cc.innerHTML=''; }, 6500);
 }
 
 function renderWhoami(){
@@ -1730,6 +1892,7 @@ $('#npChat').onclick=()=>{ NP.chatBanners=!NP.chatBanners; saveNP(); renderNotif
 $('#npDevice').onclick=toggleDeviceNotifs;
 $('#chatSendBtn').onclick=sendChat;
 $('#chatInput').addEventListener('keydown',(e)=>{ if(e.key==='Enter') sendChat(); });
+$('#projection').addEventListener('click',()=>{ whyOpen=!whyOpen; renderProjection(); renderWhy(); });
 document.querySelectorAll('.story-mode').forEach(b=> b.onclick=()=>{ storyMode=b.dataset.mode; document.querySelectorAll('.story-mode').forEach(x=>x.classList.toggle('on',x===b)); renderStory(); });
 document.querySelectorAll('.story-f').forEach(b=> b.onclick=()=>{ storyFilter=b.dataset.f; document.querySelectorAll('.story-f').forEach(x=>x.classList.toggle('on',x===b)); renderStory(); });
 document.querySelectorAll('#mineRadio button').forEach(b=> b.onclick=()=>{ S.mine=b.dataset.mine; hasBaseline=false; prevScores={}; save(); markRadios(); render(); });
@@ -1776,7 +1939,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-f';
+const BUILD_ID='2026-07-18-h';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
