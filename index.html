@@ -91,18 +91,23 @@
   .evsub{color:#b9cadb;font-size:12px}
 
   /* Match summary */
-  .summary{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-  .scoreband{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 12px;gap:6px}
+  /* overflow:visible so the crown can hover ABOVE the card edge without being clipped;
+     the bottom bar re-rounds its own corners since the card no longer clips children */
+  .summary{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:visible}
+  .scoreband{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 12px;gap:6px;position:relative}
   .tside{text-align:center;min-width:0;position:relative}
-  .crown{position:absolute;top:-24px;left:50%;font-size:26px;opacity:0;pointer-events:none;z-index:6;
-    filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));transition:opacity .35s ease;
+  /* single traveling crown: JS sets `left` to the leading team's center; the left transition
+     makes it glide across the card when the lead flips */
+  .crown{position:absolute;top:-30px;left:50%;font-size:27px;opacity:0;pointer-events:none;z-index:40;
+    filter:drop-shadow(0 0 7px rgba(244,183,64,.85)) drop-shadow(0 3px 6px rgba(0,0,0,.35));
+    transition:left .7s cubic-bezier(.22,1,.36,1), opacity .35s ease;
     animation:crownFloat 2.4s ease-in-out infinite;transform-origin:center}
   .crown.show{opacity:1}
   @keyframes crownFloat{
     0%,100%{transform:translate(-50%,0) rotate(-7deg)}
     50%{transform:translate(-50%,-7px) rotate(7deg)}
   }
-  @media (prefers-reduced-motion:reduce){ .crown{animation:none;transform:translate(-50%,0)} }
+  @media (prefers-reduced-motion:reduce){ .crown{animation:none;transform:translate(-50%,0);transition:opacity .35s ease} }
   .tside .nm{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tside .tot{font-size:40px;font-weight:900;letter-spacing:-1px;line-height:1;margin-top:6px}
   .tside .thru{font-size:11px;color:var(--muted);margin-top:4px;height:14px}
@@ -122,7 +127,7 @@
   .filepick{cursor:pointer;display:inline-flex;align-items:center}
 
   /* Notify bar */
-  .notifybar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,rgba(244,183,64,.05))}
+  .notifybar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,rgba(244,183,64,.05));border-radius:0 0 var(--radius) var(--radius)}
   .projection{padding:11px 14px 12px;border-top:1px solid var(--line)}
   .proj-row{display:flex;align-items:center;gap:9px}
   .proj-pct{font-size:13px;font-weight:900;min-width:34px;color:var(--text)}
@@ -179,11 +184,14 @@
   .wkbanner{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
   .wkbanner.slim{display:flex;align-items:center;gap:12px;justify-content:space-between;font-size:12px;color:var(--muted);padding:12px 14px}
   .wkb-top{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800}
-  .wkb-lock{font-size:12px;font-weight:800;color:var(--gold)}
-  .wkb-sub{font-size:12px;color:var(--muted);margin:6px 0 11px;line-height:1.45}
+  .wkb-pill{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--paper);border:1px solid var(--line);color:var(--muted)}
+  .wkb-pill.locked{background:var(--gold);border-color:var(--gold);color:#3a2a00}
+  .wkb-sub{font-size:12.5px;color:var(--muted);margin:6px 0 11px;line-height:1.45}
   .wkb-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
   .wkb-actions:last-child{margin-bottom:0}
-  .wkb-syncnote{font-size:11.5px;color:var(--muted);margin:2px 0 10px;line-height:1.4}
+  .wkb-rules{margin-top:4px;font-size:12px;color:var(--muted)}
+  .wkb-rules summary{cursor:pointer;font-weight:700;color:var(--text);font-size:12px;padding:4px 0;list-style-position:inside}
+  .wkb-rules ul{margin:6px 0 2px;padding-left:20px;line-height:1.7}
 
   /* Who's phone is this */
   #whoami{display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 11px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
@@ -369,8 +377,8 @@
   <!-- Match summary -->
   <div class="summary">
     <div class="scoreband">
+      <span class="crown" id="crownFloat">👑</span>
       <div class="tside">
-        <span class="crown" id="crownA">👑</span>
         <img class="tavatar" id="avA" alt="">
         <div class="nm" id="sA">Team A</div>
         <div class="tot" id="totA">—</div>
@@ -382,7 +390,6 @@
         <div class="lead-pill tie" id="leadPill">—</div>
       </div>
       <div class="tside">
-        <span class="crown" id="crownB">👑</span>
         <img class="tavatar" id="avB" alt="">
         <div class="nm" id="sB">Team B</div>
         <div class="tot" id="totB">—</div>
@@ -601,10 +608,19 @@ function render(){
     if(tA.sum===tB.sum){ pill.textContent='All square'; pill.className='lead-pill tie'; }
     else{ const lead = tA.sum<tB.sum? 'A':'B'; const diff=Math.abs(tA.sum-tB.sum); pill.textContent=`${S.teams[lead].name.split(' ')[0]} +${diff}`; pill.className='lead-pill'; leader=lead; }
   } else { pill.textContent='—'; pill.className='lead-pill tie'; }
-  // floating crown hovers over whichever team currently leads (hidden on a tie / no scores yet)
-  const cA=$('#crownA'), cB=$('#crownB');
-  if(cA) cA.classList.toggle('show', leader==='A');
-  if(cB) cB.classList.toggle('show', leader==='B');
+  // single floating crown glides to whichever team leads (hidden on a tie / no scores yet)
+  const crown=$('#crownFloat');
+  if(crown){
+    if(leader){
+      const sides=crown.parentElement.querySelectorAll('.tside');
+      const target=sides[leader==='A'?0:1];
+      if(target){
+        const r=target.getBoundingClientRect(), b=crown.parentElement.getBoundingClientRect();
+        crown.style.left=(r.left + r.width/2 - b.left)+'px';
+      }
+      crown.classList.add('show');
+    } else crown.classList.remove('show');
+  }
 
   $('#yourA').textContent = S.mine==='A'? '★ My team':'';
   $('#yourB').textContent = S.mine==='B'? '★ My team':'';
@@ -842,60 +858,39 @@ function renderWeekendBanner(){
   const el=$('#weekendBanner'); if(!el) return;
   if(!weekendPlanning()){
     el.style.display='';
-    el.innerHTML=`<div class="wkbanner slim"><span>Weekend: 4 starters + optional 7th (cut-makers). Unlocks after Friday.</span><button class="btn ghost sm" id="planBtn">Set up now</button></div>`;
+    el.innerHTML=`<div class="wkbanner slim"><span><b>Weekend Lineup</b> · unlocks after Friday</span><button class="btn ghost sm" id="planBtn">Set up now</button></div>`;
     const pb=$('#planBtn'); if(pb) pb.onclick=()=>{ S.planWknd=true; save(); render(); };
     return;
   }
   el.style.display='';
-  const oppSide=S.mine==='A'?'B':'A';
-  const haveOpp = (S.startWknd[oppSide]||[]).length>0;
+  // one-line status: the single most useful fact right now
+  const n=validStarters(S.mine).length;
+  const statusLine = S.locked
+    ? 'Locked for the weekend — only each team’s 4 starters count now.'
+    : (n<4 ? `Pick your 4 starters below — ${n}/4 chosen.` : 'Starters set — lock your lineup after Friday.');
   el.innerHTML=`<div class="wkbanner">
-    <div class="wkb-top"><b>Weekend lineups</b>${S.locked?'<span class="wkb-lock">🔒 Locked</span>':''}</div>
-    <div class="wkb-sub">${S.locked
-      ? 'Locked for the weekend. Rounds 1–2 counted all 6; now only each team’s 4 starters count.'
-      : 'Pick 4 starters per team (bench 2). Add an optional 7th from the cut-makers. Then lock after Friday — empty starter slots cost +10 each.'}</div>
+    <div class="wkb-top">
+      <b>Weekend Lineup</b>
+      <span class="wkb-pill ${S.locked?'locked':''}">${S.locked?'🔒 Locked':'Open'}</span>
+    </div>
+    <div class="wkb-sub">${statusLine}</div>
     <div class="wkb-actions">${S.locked
       ? `<button class="btn sm" id="copyCfgBtn">📋 Copy robot config</button><button class="btn ghost sm" id="unlockBtn">Unlock</button>`
-      : `<button class="btn sm" id="lockBtn">🔒 Lock weekend lineups</button>`}${(EVENT.round||0)<3 ? `<button class="btn ghost sm" id="exitWkBtn">← Rounds 1–2</button>` : ''}</div>
-    <div class="wkb-syncnote">${haveOpp
-        ? `✓ ${S.teams[oppSide].name}'s picks are loaded on this phone`
-        : `⚠️ This phone doesn't know ${S.teams[oppSide].name}'s picks yet — import them below so scores match on both phones`}</div>
-    <div class="wkb-actions">
-      <button class="btn ghost sm" id="sharePicksBtn">📤 Share my picks</button>
-      <button class="btn ghost sm" id="importPicksBtn">📥 Import their picks</button>
-    </div>
+      : `<button class="btn sm" id="lockBtn">🔒 Lock lineup</button>`}${(EVENT.round||0)<3 ? `<button class="btn ghost sm" id="exitWkBtn">← Rounds 1–2</button>` : ''}</div>
+    <details class="wkb-rules"><summary>How it works</summary>
+      <ul>
+        <li>Rounds 1–2: all 6 players count automatically.</li>
+        <li>Weekend: tap the checkboxes to pick <b>4 starters</b> (2 sit).</li>
+        <li>Optional: add a <b>7th player</b> from the cut-makers.</li>
+        <li>Lock after Friday — each empty starter slot costs <b>+10</b>.</li>
+        <li>Signed in? Picks sync to the other phone automatically. ☁️</li>
+      </ul>
+    </details>
   </div>`;
   const lb=$('#lockBtn'); if(lb) lb.onclick=lockLineups;
   const ub=$('#unlockBtn'); if(ub) ub.onclick=unlockLineups;
   const cb=$('#copyCfgBtn'); if(cb) cb.onclick=exportRobotConfig;
   const xb=$('#exitWkBtn'); if(xb) xb.onclick=()=>{ S.planWknd=false; S.locked=false; save(); render(); toast('Back to Rounds 1–2 — all 6 count'); };
-  $('#sharePicksBtn').onclick=shareMyPicks;
-  $('#importPicksBtn').onclick=importTheirPicks;
-}
-// Two phones, no shared server: each person's starter picks live only in their own phone's storage.
-// "Share" packages your picks as a short code; the other person pastes it in "Import" so both phones
-// agree on both rosters (and therefore compute the same penalties/totals).
-function shareMyPicks(){
-  const side=S.mine;
-  const payload={ mmt:1, side, team:S.teams[side].name, starters:S.startWknd[side]||[], seventh:S.roster7[side]||'' };
-  const code=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  const text=`My ${S.teams[side].name} weekend picks — paste this into "Import their picks":\n${code}`;
-  if(navigator.share){ navigator.share({text}).catch(()=>{}); }
-  else if(navigator.clipboard?.writeText){ navigator.clipboard.writeText(code).then(()=>toast('Copied — text it to them, they tap "Import their picks"')); }
-  else prompt('Copy this and send it to them:', code);
-}
-function importTheirPicks(){
-  const raw=(prompt('Paste the code they sent you:')||'').trim();
-  if(!raw) return;
-  let payload;
-  try{ payload=JSON.parse(decodeURIComponent(escape(atob(raw.replace(/^.*\n/,''))))); }
-  catch(e){ toast('That code didn’t look right — copy the whole thing and try again'); return; }
-  if(!payload||payload.mmt!==1||!payload.side){ toast('That code didn’t look right'); return; }
-  if(payload.side===S.mine){ toast('That’s your own picks, not theirs — ask them to tap "Share my picks" on their phone'); return; }
-  S.startWknd[payload.side]=payload.starters||[];
-  S.roster7[payload.side]=payload.seventh||'';
-  save(); render();
-  toast(`Loaded ${payload.team}'s picks ✓`);
 }
 function exportRobotConfig(){
   const mine=S.mine, opp=(mine==='A'?'B':'A');
@@ -1435,7 +1430,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-b';
+const BUILD_ID='2026-07-18-c';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
