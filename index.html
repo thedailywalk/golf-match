@@ -412,6 +412,23 @@
   .npswitch.on::after{left:23px}
   @media (prefers-color-scheme:dark){ .np-seg button.on{background:var(--gold);color:#3a2a00} .npswitch::after{background:#e8eaed} }
 
+  /* Home: my leagues */
+  .home-h{margin:18px 4px 12px;font-size:20px;font-weight:900}
+  .home-empty{color:var(--muted);font-size:13px;text-align:center;padding:26px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+  .lgcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:10px;cursor:pointer;transition:transform .12s}
+  .lgcard:active{transform:scale(.985)}
+  .lgcard.active{border-color:var(--gold);border-width:2px}
+  .lg-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .lg-name{flex:1;min-width:0;font-size:16px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lg-live{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--gold);color:#3a2a00}
+  .lg-teams{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  .lg-teams b{color:var(--text)}
+  .lg-foot{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+  .lg-code{font-weight:800;letter-spacing:1.5px;background:var(--paper);border:1px dashed var(--line);border-radius:7px;padding:2px 8px;cursor:pointer}
+  .lg-enter{margin-left:auto;font-weight:800;color:var(--gold)}
+  .home-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .home-actions .btn{width:100%;padding:13px}
+
   /* Final match recap */
   .recapcard{position:relative;overflow:hidden;margin-top:14px;background:var(--card);border:2px solid var(--gold);
     border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 16px 16px;text-align:center}
@@ -471,6 +488,7 @@
   <div class="hrow">
     <div class="brand"><span class="dot">⛳</span> Major Match</div>
     <div class="spacer"></div>
+    <button class="iconbtn" id="homeBtn" title="My leagues">⌂</button>
     <button class="iconbtn" id="syncBtn" title="Sync now">↻</button>
     <button class="iconbtn" id="editBtn" title="Edit teams">✎</button>
   </div>
@@ -485,6 +503,15 @@
 <div class="cmt" id="commentary" aria-live="polite"><div class="cmt-clip" id="commentaryClip"></div></div>
 
 <div class="wrap">
+  <div id="homeView" style="display:none">
+    <div class="home-h"><b>⛳ My Leagues</b></div>
+    <div id="homeLeagues"><div class="home-empty">Loading your leagues…</div></div>
+    <div class="home-actions">
+      <button class="btn" id="createLeagueBtn" type="button">➕ Create a league</button>
+      <button class="btn ghost" id="joinLeagueBtn" type="button">🔑 Join with a code</button>
+    </div>
+  </div>
+
   <div class="tabs">
     <button class="tab on" data-view="match">⛳ Draft</button>
     <button class="tab" data-view="board">🏆 Leaderboard</button>
@@ -637,11 +664,41 @@
   <div style="height:18px"></div>
 </div>
 
+<div class="sheet-bg" id="leagueSheetBg"></div>
+<div class="sheet" id="leagueSheet">
+  <div class="grip"></div>
+  <div class="sheet-h"><div class="t" id="leagueSheetTitle">New league</div><button class="btn ghost sm" id="leagueSheetClose">Cancel</button></div>
+  <div id="leagueCreateForm">
+    <div class="field"><label>League name</label><input type="text" id="lgName" maxlength="40" placeholder="Sunday Major Showdown"></div>
+    <div class="field"><label>Your team name</label><input type="text" id="lgTeam" maxlength="40" placeholder="Bogey Bird Sparkle Shark"></div>
+    <div class="np-hint" style="margin:0 16px 12px">Head-to-head format: you vs one opponent. You’ll get an invite code to send them.</div>
+    <div class="field"><button class="btn" id="lgCreateGo" type="button" style="width:100%">Create league</button></div>
+  </div>
+  <div id="leagueJoinForm" style="display:none">
+    <div class="field"><label>Invite code</label><input type="text" id="lgCode" maxlength="6" placeholder="ABC123" autocapitalize="characters" style="text-transform:uppercase;letter-spacing:3px;text-align:center;font-weight:800">
+    </div>
+    <div class="field"><label>Your team name</label><input type="text" id="lgJoinTeam" maxlength="40" placeholder="Strike Eagle"></div>
+    <div class="field"><button class="btn" id="lgJoinGo" type="button" style="width:100%">Join league</button></div>
+  </div>
+  <div id="leagueSheetErr" class="autherr" style="display:none;margin:0 16px 16px"></div>
+  <div style="height:12px"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 /* ---------------- State ---------------- */
-const LS = 'mmt-state-v1';
+/* ---------------- Leagues: every league gets its own state/history/chat, keyed by league id.
+   Switching leagues = set the active id + reload, so every code path just reads the active league. */
+const ACTIVE_LEAGUE = localStorage.getItem('mmt-active-league') || 'major-match-2026';
+window.ACTIVE_LEAGUE = ACTIVE_LEAGUE;
+// one-time migration: the original single-league keys become the "major-match-2026" league's keys
+if(!localStorage.getItem('mmt-state-v1:major-match-2026') && localStorage.getItem('mmt-state-v1')){
+  localStorage.setItem('mmt-state-v1:major-match-2026', localStorage.getItem('mmt-state-v1'));
+  const _h=localStorage.getItem('mmt-history-v1'); if(_h) localStorage.setItem('mmt-history-v1:major-match-2026',_h);
+  const _c=localStorage.getItem('mmt-chat-seen'); if(_c) localStorage.setItem('mmt-chat-seen:major-match-2026',_c);
+}
+const LS = 'mmt-state-v1:'+ACTIVE_LEAGUE;
 const DEFAULT = {
   event: 'auto',            // 'auto' = current PGA event
   mine: 'B',                // Princess Lulu
@@ -827,6 +884,7 @@ function render(){
   if(VIEW==='board') renderBoard();
   if(VIEW==='chat') renderChat();
   if(VIEW==='match') renderStory();
+  renderModeVisibility();
 
   $('#foot').innerHTML = 'Scores from ESPN’s public golf feed · matched by player name.<br>Notifications fire while this app is open. Add to Home Screen for the full-screen app.';
 }
@@ -1081,7 +1139,7 @@ function renderWhy(){
 }
 /* ---------------- Chat tab (live via Firestore; messages arrive on window.__chatMessages) ---------------- */
 let chatUnread = 0;
-const CHAT_SEEN_KEY = 'mmt-chat-seen';
+const CHAT_SEEN_KEY = 'mmt-chat-seen:'+ACTIVE_LEAGUE;
 function chatSeenTs(){ return Number(localStorage.getItem(CHAT_SEEN_KEY)||0); }
 function markChatSeen(){ const msgs=window.__chatMessages||[]; const last=msgs.length?msgs[msgs.length-1].ts:0; if(last) localStorage.setItem(CHAT_SEEN_KEY,String(last)); chatUnread=0; updateChatBadge(); }
 function updateChatBadge(){ const b=$('#chatBadge'); if(!b) return; if(chatUnread>0 && VIEW!=='chat'){ b.textContent=chatUnread>9?'9+':chatUnread; b.style.display=''; } else b.style.display='none'; }
@@ -1130,7 +1188,7 @@ document.addEventListener('mmt:chat', (e)=>{
    History is recorded per-device in localStorage (starts accumulating from the moment this
    version ships on the device). Points = score/win%-over-time; events come from the same
    engine that powers the commentary banners, so the two always agree. */
-const HIST_KEY='mmt-history-v1';
+const HIST_KEY='mmt-history-v1:'+ACTIVE_LEAGUE;
 let H=loadH();
 function loadH(){ try{ const h=JSON.parse(localStorage.getItem(HIST_KEY)||'{}'); return {points:h.points||[], events:h.events||[]}; }catch(e){ return {points:[],events:[]}; } }
 function saveH(){ try{ localStorage.setItem(HIST_KEY, JSON.stringify(H)); }catch(e){} }
@@ -1317,6 +1375,52 @@ function fireConfetti(){
   c.innerHTML=html;
   setTimeout(()=>{ const cc=$('#recapConfetti'); if(cc) cc.innerHTML=''; }, 6500);
 }
+
+/* ---------------- Home / leagues (UI side; Firestore work lives in the module script) ---------------- */
+let MODE='league';   // 'home' | 'league'
+window.__defaultTeams = structuredClone(DEFAULT.teams);   // used by the module when seeding a new league
+function renderModeVisibility(){
+  const home = MODE==='home';
+  $('#homeView').style.display = home? '' : 'none';
+  document.querySelector('.tabs').style.display = home? 'none' : '';
+  $('#whoami').style.display = home? 'none' : '';
+  if(home){ $('#matchView').style.display='none'; $('#boardView').style.display='none'; $('#chatView').style.display='none'; }
+}
+function renderHome(){
+  const host=$('#homeLeagues'); if(!host) return;
+  const ids=window.__myLeagues||[], metas=window.__leagueMetas||{};
+  if(!ids.length){ host.innerHTML='<div class="home-empty">No leagues yet — create one below and send the code to a friend.</div>'; return; }
+  host.innerHTML=ids.map(id=>{
+    const m=metas[id]||{};
+    const nA=m.teamA||'Team A', nB=m.teamB||'Waiting for opponent';
+    return `<div class="lgcard${id===ACTIVE_LEAGUE?' active':''}" data-lg="${esc(id)}">
+      <div class="lg-top"><span class="lg-name">${esc(m.name||id)}</span>${id===ACTIVE_LEAGUE?'<span class="lg-live">Active</span>':''}</div>
+      <div class="lg-teams"><b>${esc(nA)}</b> vs <b>${esc(nB)}</b></div>
+      <div class="lg-foot">${m.code?`<span class="lg-code" data-code="${esc(m.code)}" title="Tap to copy invite code">${esc(m.code)}</span>`:''}<span class="lg-enter">Enter →</span></div>
+    </div>`;
+  }).join('');
+  host.querySelectorAll('.lgcard').forEach(c=> c.onclick=(ev)=>{
+    const codeEl=ev.target.closest('.lg-code');
+    if(codeEl){ ev.stopPropagation(); navigator.clipboard?.writeText(codeEl.dataset.code).then(()=>toast('Invite code copied — text it to a friend 🔑')); return; }
+    enterLeague(c.dataset.lg);
+  });
+}
+function enterLeague(id){
+  if(id===ACTIVE_LEAGUE){ MODE='league'; render(); return; }
+  localStorage.setItem('mmt-active-league', id);
+  location.reload();   // boot re-reads everything (state, history, chat, sync) for the new league
+}
+document.addEventListener('mmt:leaguesUpdated', ()=>{ if(MODE==='home') renderHome(); });
+
+function openLeagueSheet(mode){
+  $('#leagueSheetTitle').textContent = mode==='join'? 'Join a league' : 'New league';
+  $('#leagueCreateForm').style.display = mode==='join'? 'none':'';
+  $('#leagueJoinForm').style.display = mode==='join'? '':'none';
+  const err=$('#leagueSheetErr'); err.style.display='none'; err.textContent='';
+  $('#leagueSheetBg').classList.add('show'); $('#leagueSheet').classList.add('show');
+}
+function closeLeagueSheet(){ $('#leagueSheetBg').classList.remove('show'); $('#leagueSheet').classList.remove('show'); }
+function leagueSheetError(msg){ const err=$('#leagueSheetErr'); err.textContent=msg; err.style.display='block'; }
 
 function renderWhoami(){
   const el=$('#whoami'); if(!el) return;
@@ -1893,6 +1997,31 @@ $('#npDevice').onclick=toggleDeviceNotifs;
 $('#chatSendBtn').onclick=sendChat;
 $('#chatInput').addEventListener('keydown',(e)=>{ if(e.key==='Enter') sendChat(); });
 $('#projection').addEventListener('click',()=>{ whyOpen=!whyOpen; renderProjection(); renderWhy(); });
+$('#homeBtn').onclick=()=>{ MODE='home'; render(); renderHome(); };
+$('#createLeagueBtn').onclick=()=>openLeagueSheet('create');
+$('#joinLeagueBtn').onclick=()=>openLeagueSheet('join');
+$('#leagueSheetClose').onclick=closeLeagueSheet;
+$('#leagueSheetBg').onclick=closeLeagueSheet;
+$('#lgCreateGo').onclick=async ()=>{
+  const name=($('#lgName').value||'').trim(), team=($('#lgTeam').value||'').trim();
+  if(!name){ leagueSheetError('Give the league a name.'); return; }
+  if(!team){ leagueSheetError('Give your team a name.'); return; }
+  if(!window.__league){ leagueSheetError('Sign in first.'); return; }
+  $('#lgCreateGo').disabled=true; $('#lgCreateGo').textContent='Creating…';
+  try{ const id=await window.__league.create(name, team); toast('League created 🔑 code copied'); enterLeague(id); }
+  catch(e){ leagueSheetError(e?.message||String(e)); }
+  finally{ $('#lgCreateGo').disabled=false; $('#lgCreateGo').textContent='Create league'; }
+};
+$('#lgJoinGo').onclick=async ()=>{
+  const code=($('#lgCode').value||'').trim().toUpperCase(), team=($('#lgJoinTeam').value||'').trim();
+  if(code.length<4){ leagueSheetError('Enter the invite code.'); return; }
+  if(!team){ leagueSheetError('Give your team a name.'); return; }
+  if(!window.__league){ leagueSheetError('Sign in first.'); return; }
+  $('#lgJoinGo').disabled=true; $('#lgJoinGo').textContent='Joining…';
+  try{ const id=await window.__league.join(code, team); toast('You’re in 🏌️'); enterLeague(id); }
+  catch(e){ leagueSheetError(e?.message||String(e)); }
+  finally{ $('#lgJoinGo').disabled=false; $('#lgJoinGo').textContent='Join league'; }
+};
 document.querySelectorAll('.story-mode').forEach(b=> b.onclick=()=>{ storyMode=b.dataset.mode; document.querySelectorAll('.story-mode').forEach(x=>x.classList.toggle('on',x===b)); renderStory(); });
 document.querySelectorAll('.story-f').forEach(b=> b.onclick=()=>{ storyFilter=b.dataset.f; document.querySelectorAll('.story-f').forEach(x=>x.classList.toggle('on',x===b)); renderStory(); });
 document.querySelectorAll('#mineRadio button').forEach(b=> b.onclick=()=>{ S.mine=b.dataset.mine; hasBaseline=false; prevScores={}; save(); markRadios(); render(); });
@@ -1939,7 +2068,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-h';
+const BUILD_ID='2026-07-18-i';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
@@ -1966,7 +2095,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp,
-  collection, addDoc, query, orderBy, limit
+  collection, addDoc, query, orderBy, limit, where, getDocs, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1990,7 +2119,7 @@ window.__fb = { app: fbApp, auth: fbAuth, db: fbDb, signOut };
 // real "league" document on purpose (not hardcoded to these two people) so a future multi-league version only
 // needs a join/create flow layered on top, not a rebuild of the storage shape itself. For now there's exactly
 // one hardcoded league since that's genuinely all this app needs today.
-const LEAGUE_ID = 'major-match-2026';
+const LEAGUE_ID = window.ACTIVE_LEAGUE || 'major-match-2026';
 // Fields that represent the SHARED match (both phones must agree on these). Deliberately excludes `mine`
 // (which team this device is viewing as "my team" — a personal preference) and `planWknd` (a local UI toggle).
 const SHARED_KEYS = ['teams','bench','manual','avatars','roster7','startWknd','locked','cutSnapshot','cutOverride','event','sync'];
@@ -2068,7 +2197,81 @@ window.__chatSend = async (text)=>{
   });
 };
 
-document.addEventListener('mmt:signedIn', () => { startLeagueSync(); startChatSync(); });
+// ---------------- League registry: users/{uid} lists your leagues; each league doc carries meta ----------------
+const CODE_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function genCode(){ let c=''; for(let i=0;i<6;i++) c+=CODE_CHARS[Math.floor(Math.random()*CODE_CHARS.length)]; return c; }
+
+async function ensureUserAndLeagues(user){
+  try{
+    const uref=doc(fbDb,'users',user.uid);
+    const snap=await getDoc(uref);
+    if(!snap.exists() || !(snap.data().leagues||[]).length){
+      // grandfather: every existing player belongs to the original league
+      await setDoc(uref,{ email:user.email||'', leagues:arrayUnion('major-match-2026'), updatedAt:serverTimestamp() },{merge:true});
+    }
+    const ids=(await getDoc(uref)).data().leagues||[];
+    window.__myLeagues=ids;
+    const metas={};
+    for(const id of ids){
+      const ld=await getDoc(doc(fbDb,'leagues',id));
+      if(!ld.exists()) continue;
+      const d=ld.data();
+      let meta=d.meta;
+      if(!meta || !meta.code){
+        meta={ name: id==='major-match-2026'?'Major Match':'League', code:genCode(), format:'h2h', createdAt:serverTimestamp(), ...(meta||{}) };
+        await setDoc(doc(fbDb,'leagues',id), {meta}, {merge:true});   // grandfather old league with a code
+      }
+      // claim my side's membership in the active league if unclaimed — prevents a code-holder
+      // from hijacking an occupied team slot in grandfathered leagues that predate membership
+      if(id===window.ACTIVE_LEAGUE){
+        const mySide=window.S?.mine, mem=meta.members||{};
+        if((mySide==='A'||mySide==='B') && !mem[mySide]){
+          await setDoc(doc(fbDb,'leagues',id), {meta:{members:{[mySide]:user.uid}}}, {merge:true});
+        }
+      }
+      metas[id]={ name:meta.name, code:meta.code, format:meta.format||'h2h',
+        teamA:d.teams?.A?.name||'Team A', teamB:d.teams?.B?.name||'Team B' };
+    }
+    window.__leagueMetas=metas;
+    document.dispatchEvent(new CustomEvent('mmt:leaguesUpdated'));
+  }catch(e){ console.error('League registry failed:', e); }
+}
+
+window.__league = {
+  async create(name, teamName){
+    const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
+    const id='lg-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
+    const code=genCode();
+    const teams=structuredClone(window.__defaultTeams||{A:{name:'Team A',players:[]},B:{name:'Team B',players:[]}});
+    teams.A.name=teamName; teams.B.name='Waiting for opponent';
+    await setDoc(doc(fbDb,'leagues',id),{
+      teams, meta:{ name, code, format:'h2h', createdBy:uid, members:{A:uid}, createdAt:serverTimestamp() },
+      createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+    });
+    await setDoc(doc(fbDb,'users',uid),{ leagues:arrayUnion(id), updatedAt:serverTimestamp() },{merge:true});
+    localStorage.setItem('mmt-state-v1:'+id, JSON.stringify({mine:'A'}));   // creator is team A on this device
+    try{ await navigator.clipboard?.writeText(code); }catch(e){}
+    return id;
+  },
+  async join(code, teamName){
+    const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
+    const qs=await getDocs(query(collection(fbDb,'leagues'), where('meta.code','==',code)));
+    if(qs.empty) throw new Error('No league found with that code — check it and try again.');
+    const ld=qs.docs[0], d=ld.data(), id=ld.id;
+    const members=d.meta?.members||{};
+    if(members.A===uid || members.B===uid){ /* already in — just re-enter */ }
+    else if(members.B) throw new Error('That league already has two teams.');
+    else{
+      await setDoc(doc(fbDb,'leagues',id),{ teams:{B:{name:teamName}}, meta:{members:{B:uid}} },{merge:true});
+    }
+    await setDoc(doc(fbDb,'users',uid),{ leagues:arrayUnion(id), updatedAt:serverTimestamp() },{merge:true});
+    const side = members.A===uid ? 'A' : 'B';
+    localStorage.setItem('mmt-state-v1:'+id, JSON.stringify({mine:side}));
+    return id;
+  }
+};
+
+document.addEventListener('mmt:signedIn', (e) => { startLeagueSync(); startChatSync(); ensureUserAndLeagues(e.detail.user); });
 
 const gate = document.getElementById('authGate');
 const emailInput = document.getElementById('authEmail');
