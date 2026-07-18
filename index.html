@@ -61,7 +61,8 @@
   .authinput{width:100%;font-size:16px;padding:13px 14px;border-radius:13px;border:1px solid var(--line);
     background:var(--paper);color:var(--text);text-align:center}
   .authnote{margin:12px 0 0;font-size:11.5px;color:var(--muted);line-height:1.4}
-  #authSentTo{font-weight:800;color:var(--text)}
+  .authlink{margin-top:14px;background:none;border:none;padding:4px;font-size:12.5px;color:var(--muted);
+    text-decoration:underline;cursor:pointer}
   .autherr{margin-top:14px;font-size:12.5px;color:var(--bad);background:rgba(209,73,59,.1);
     border-radius:10px;padding:9px 11px;text-align:left}
   @media (prefers-color-scheme:dark){
@@ -329,17 +330,12 @@
   <div class="authcard">
     <div class="authlogo">⛳</div>
     <h1>Major Match</h1>
-    <div id="authStep1">
-      <p>Sign in to keep your team synced across every phone.</p>
-      <input type="email" id="authEmail" class="authinput" placeholder="you@email.com" autocomplete="email" inputmode="email">
-      <button id="sendLinkBtn" class="authbtn google" type="button">Send me a sign-in link</button>
-      <p class="authnote">No password — we'll email you a one-tap link. Works reliably in Safari, unlike Google's popup sign-in.</p>
-    </div>
-    <div id="authStep2" style="display:none">
-      <div class="authlogo" style="font-size:36px">📬</div>
-      <p><b>Check your email</b><br>We sent a sign-in link to <span id="authSentTo"></span>. Open it on this phone to finish signing in.</p>
-      <button id="resendLinkBtn" class="authbtn ghost" type="button">Didn't get it? Send again</button>
-    </div>
+    <p>Sign in to keep your team synced across every phone.</p>
+    <input type="email" id="authEmail" class="authinput" placeholder="you@email.com" autocomplete="email" inputmode="email">
+    <input type="password" id="authPassword" class="authinput" placeholder="Password (6+ characters)" autocomplete="current-password" style="margin-top:10px">
+    <button id="authGoBtn" class="authbtn google" type="button">Sign in</button>
+    <p class="authnote">First time? Just pick a password — your account is created automatically.</p>
+    <button id="forgotBtn" class="authlink" type="button">Forgot password?</button>
     <div id="authError" class="autherr" style="display:none"></div>
   </div>
 </div>
@@ -1439,7 +1435,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-a';
+const BUILD_ID='2026-07-18-b';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
@@ -1462,7 +1458,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 // This script runs AFTER the classic <script> above (module scripts are deferred), so window.toast etc. already exist.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
-  getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut, onAuthStateChanged
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp
@@ -1541,14 +1537,11 @@ async function startLeagueSync(){
 document.addEventListener('mmt:signedIn', () => { startLeagueSync(); });
 
 const gate = document.getElementById('authGate');
-const step1 = document.getElementById('authStep1');
-const step2 = document.getElementById('authStep2');
 const emailInput = document.getElementById('authEmail');
-const sendBtn = document.getElementById('sendLinkBtn');
-const resendBtn = document.getElementById('resendLinkBtn');
-const sentToEl = document.getElementById('authSentTo');
+const passInput = document.getElementById('authPassword');
+const goBtn = document.getElementById('authGoBtn');
+const forgotBtn = document.getElementById('forgotBtn');
 const errEl = document.getElementById('authError');
-const EMAIL_KEY = 'mmt-signin-email';
 
 function showAuthError(msg){
   if(!errEl) return;
@@ -1557,46 +1550,53 @@ function showAuthError(msg){
 }
 function clearAuthError(){ if(errEl){ errEl.style.display='none'; errEl.textContent=''; } }
 
-// Email link (passwordless) sign-in — chosen over Google's redirect/popup sign-in because Safari's
-// "Prevent Cross-Site Tracking" (on by default on every iPhone) blocks the storage handoff Google's
-// flow depends on, making it fail silently. This flow never leaves the app's own domain, so it's immune
-// to that. Standard Firebase pattern: send a link -> user taps it -> same-origin sign-in completes.
-const actionCodeSettings = { url: location.href.split('?')[0], handleCodeInApp: true };
-
-async function sendLink(email){
+// Email + password sign-in. Chosen after two failed approaches, both broken by iPhone realities:
+//  1. Google redirect sign-in — silently blocked by Safari's default "Prevent Cross-Site Tracking".
+//  2. Email-link sign-in — links land in spam (where Gmail disables them), the free tier allows only
+//     ~5 sign-in emails/day, and tapped links open in Safari rather than the installed app anyway.
+// Password sign-in happens entirely inside the app: no email delivery, no quota, no context handoff.
+// One button does both jobs: try signing in; if the account doesn't exist yet, create it. Firebase's
+// email-enumeration protection makes "no such user" and "wrong password" the same error code, so the
+// create attempt is how we tell them apart (email-already-in-use ⇒ it was a wrong password).
+async function doAuth(){
   clearAuthError();
+  const email=(emailInput.value||'').trim(), pw=passInput.value||'';
   if(!email || !email.includes('@')){ showAuthError('Enter a valid email address.'); return; }
+  if(pw.length<6){ showAuthError('Password must be at least 6 characters.'); return; }
+  goBtn.disabled=true; goBtn.textContent='Signing in…';
   try{
-    await sendSignInLinkToEmail(fbAuth, email, actionCodeSettings);
-    localStorage.setItem(EMAIL_KEY, email);
-    sentToEl.textContent = email;
-    step1.style.display = 'none';
-    step2.style.display = '';
-  }catch(e){
-    console.error('Send sign-in link failed:', e);
-    showAuthError('Couldn’t send the link: ' + (e?.message || e));
+    await signInWithEmailAndPassword(fbAuth, email, pw);
+  }catch(e1){
+    if(e1?.code==='auth/invalid-credential' || e1?.code==='auth/user-not-found' || e1?.code==='auth/wrong-password'){
+      try{
+        await createUserWithEmailAndPassword(fbAuth, email, pw);
+        window.toast?.('Account created — welcome! ⛳');
+      }catch(e2){
+        if(e2?.code==='auth/email-already-in-use') showAuthError('Wrong password for this email. Try again, or tap "Forgot password?"');
+        else if(e2?.code==='auth/weak-password') showAuthError('Password must be at least 6 characters.');
+        else showAuthError('Sign-in failed: ' + (e2?.message || e2));
+      }
+    } else {
+      showAuthError('Sign-in failed: ' + (e1?.message || e1));
+    }
+  }finally{
+    goBtn.disabled=false; goBtn.textContent='Sign in';
   }
 }
-sendBtn?.addEventListener('click', () => sendLink((emailInput.value||'').trim()));
-resendBtn?.addEventListener('click', () => sendLink(localStorage.getItem(EMAIL_KEY)||''));
-emailInput?.addEventListener('keydown', (e) => { if(e.key==='Enter') sendLink((emailInput.value||'').trim()); });
+goBtn?.addEventListener('click', doAuth);
+passInput?.addEventListener('keydown', (e) => { if(e.key==='Enter') doAuth(); });
 
-// On load: if this page WAS opened from the emailed link, complete the sign-in.
-if(isSignInWithEmailLink(fbAuth, window.location.href)){
-  let email = localStorage.getItem(EMAIL_KEY);
-  if(!email) email = window.prompt('Confirm the email you used to request the sign-in link:');
-  if(email){
-    signInWithEmailLink(fbAuth, email, window.location.href)
-      .then(() => {
-        localStorage.removeItem(EMAIL_KEY);
-        history.replaceState(null, '', window.location.href.split('?')[0]); // strip the sign-in params from the URL
-      })
-      .catch((e) => {
-        console.error('Email link sign-in failed:', e);
-        showAuthError('That link didn’t work: ' + (e?.message || e));
-      });
+forgotBtn?.addEventListener('click', async () => {
+  clearAuthError();
+  const email=(emailInput.value||'').trim();
+  if(!email || !email.includes('@')){ showAuthError('Type your email above first, then tap "Forgot password?"'); return; }
+  try{
+    await sendPasswordResetEmail(fbAuth, email);
+    showAuthError('Reset email sent to ' + email + ' — check spam too.');
+  }catch(e){
+    showAuthError('Couldn’t send reset email: ' + (e?.message || e));
   }
-}
+});
 
 onAuthStateChanged(fbAuth, (user) => {
   window.currentUser = user;
