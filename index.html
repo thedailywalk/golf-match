@@ -472,8 +472,9 @@ const DEFAULT = {
   cutOverride: {}           // norm name -> 'made' | 'missed' (manual override of ESPN)
 };
 let S = load();
+window.S = S; // explicit reference so the Firebase module script (separate scope) can read/write it reliably
 function load(){ try{ return Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(LS)||'{}')); }catch(e){ return structuredClone(DEFAULT); } }
-function save(){ localStorage.setItem(LS, JSON.stringify(S)); }
+function save(){ localStorage.setItem(LS, JSON.stringify(S)); if(window.__mmtSyncPush) window.__mmtSyncPush(); }
 
 /* live data: normalizedName -> {toPar, thru, rounds[], live} */
 let LIVE = {};
@@ -1401,8 +1402,27 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 render();
 sync();
 
-/* service worker */
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+/* service worker — actively checks for updates and reloads once a new version takes over.
+   iOS home-screen apps rarely re-check an installed service worker on their own, which is why
+   this app used to need a manual "remove from Home Screen, re-add" to pick up changes. */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    reg.update();                                                   // check for a newer sw.js right away
+    document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') reg.update(); });
+    reg.addEventListener('updatefound', () => {
+      const fresh = reg.installing;
+      if(!fresh) return;
+      fresh.addEventListener('statechange', () => {
+        if(fresh.state==='installed' && navigator.serviceWorker.controller) toast('Updating to the latest version…');
+      });
+    });
+  }).catch(()=>{});
+  let reloadedOnce=false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(reloadedOnce) return; reloadedOnce=true;
+    location.reload();
+  });
+}
 </script>
 
 <script type="module">
@@ -1413,7 +1433,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import {
   getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {
+  getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDc7DVHgHnIwE29PyYbMwK7dxkH1KtrlUw",
@@ -1428,8 +1450,64 @@ const fbApp = initializeApp(firebaseConfig);
 const fbAuth = getAuth(fbApp);
 const fbDb = getFirestore(fbApp);
 
-// Exposed for the classic script / future Firestore sync work (task: migrate lineup state to Firestore).
+// Exposed for the classic script.
 window.__fb = { app: fbApp, auth: fbAuth, db: fbDb, signOut };
+
+// ---------------- Live league sync (replaces the manual copy/paste share codes once signed in) ----------------
+// Data model: one Firestore doc per league (leagues/{leagueId}) holding the shared match state — built as a
+// real "league" document on purpose (not hardcoded to these two people) so a future multi-league version only
+// needs a join/create flow layered on top, not a rebuild of the storage shape itself. For now there's exactly
+// one hardcoded league since that's genuinely all this app needs today.
+const LEAGUE_ID = 'major-match-2026';
+// Fields that represent the SHARED match (both phones must agree on these). Deliberately excludes `mine`
+// (which team this device is viewing as "my team" — a personal preference) and `planWknd` (a local UI toggle).
+const SHARED_KEYS = ['teams','bench','manual','avatars','roster7','startWknd','locked','cutSnapshot','cutOverride','event','sync'];
+function sharedSlice(state){ const out={}; for(const k of SHARED_KEYS) out[k]=state[k]; return out; }
+function applySharedSlice(state, remote){ for(const k of SHARED_KEYS){ if(remote[k]!==undefined) state[k]=remote[k]; } }
+
+let leagueRef=null, applyingRemote=false, pushTimer=null, unsubscribeLeague=null;
+
+function schedulePush(){
+  if(applyingRemote || !leagueRef) return;  // don't echo back data that just arrived FROM Firestore
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    setDoc(leagueRef, { ...sharedSlice(window.S), updatedAt: serverTimestamp(), updatedBy: window.currentUser?.uid||null }, { merge: true })
+      .catch((e) => console.error('League sync push failed:', e));
+  }, 500);
+}
+window.__mmtSyncPush = schedulePush;
+
+async function startLeagueSync(){
+  leagueRef = doc(fbDb, 'leagues', LEAGUE_ID);
+  try{
+    const snap = await getDoc(leagueRef);
+    if(!snap.exists()){
+      // First person to ever sign in seeds the shared league from whatever's already on their phone.
+      await setDoc(leagueRef, { ...sharedSlice(window.S), createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+      window.toast?.('Started the shared league in the cloud ☁️');
+    } else {
+      applyingRemote = true;
+      applySharedSlice(window.S, snap.data());
+      window.save(); window.render();
+      applyingRemote = false;
+      window.toast?.('Synced with the cloud ☁️');
+    }
+  }catch(e){
+    console.error('League sync init failed:', e);
+    window.toast?.('Cloud sync failed — still working from this phone’s local data');
+    return;
+  }
+  if(unsubscribeLeague) unsubscribeLeague();
+  unsubscribeLeague = onSnapshot(leagueRef, (docSnap) => {
+    if(!docSnap.exists()) return;
+    applyingRemote = true;
+    applySharedSlice(window.S, docSnap.data());
+    window.save();      // keeps the localStorage mirror current too, so the app still works offline
+    window.render();
+    applyingRemote = false;
+  }, (e) => console.error('League listener error:', e));
+}
+document.addEventListener('mmt:signedIn', () => { startLeagueSync(); });
 
 const gate = document.getElementById('authGate');
 const googleBtn = document.getElementById('googleSignInBtn');
@@ -1466,6 +1544,8 @@ onAuthStateChanged(fbAuth, (user) => {
     document.dispatchEvent(new CustomEvent('mmt:signedIn', { detail: { user } }));
   } else {
     gate.classList.remove('hide');
+    if(unsubscribeLeague){ unsubscribeLeague(); unsubscribeLeague=null; }  // cleanly detach — signed out, no more listening
+    leagueRef = null;
   }
 });
 </script>
