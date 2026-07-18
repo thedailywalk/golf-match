@@ -376,6 +376,22 @@
   .radio-row{display:flex;gap:8px;padding:4px 16px 12px}
   .radio-row button{flex:1;padding:11px;border-radius:11px;border:1px solid var(--line);background:var(--paper);color:var(--text);font-weight:800;cursor:pointer}
   .radio-row button.sel{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
+
+  /* Alerts sheet */
+  .np-section{font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:18px 16px 8px}
+  .np-seg{display:flex;gap:6px;margin:0 16px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .np-seg button{flex:1;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:13px;padding:9px;border-radius:9px;cursor:pointer}
+  .np-seg button.on{background:var(--navy);color:#fff}
+  .np-hint{font-size:11.5px;color:var(--muted);margin:8px 16px 4px;line-height:1.45}
+  .np-row{display:flex;align-items:center;gap:12px;margin:14px 16px 0;padding:12px 0 12px;border-top:1px solid var(--line)}
+  .np-row>div{flex:1;min-width:0}
+  .np-row b{display:block;font-size:14px;color:var(--text)}
+  .np-row span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.4}
+  .npswitch{flex:none;width:50px;height:30px;border-radius:15px;border:1px solid var(--line);background:var(--paper);cursor:pointer;position:relative;transition:background .2s,border-color .2s}
+  .npswitch::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:left .2s}
+  .npswitch.on{background:var(--good);border-color:var(--good)}
+  .npswitch.on::after{left:23px}
+  @media (prefers-color-scheme:dark){ .np-seg button.on{background:var(--gold);color:#3a2a00} .npswitch::after{background:#e8eaed} }
   .toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:60;pointer-events:none;box-shadow:var(--shadow)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -553,6 +569,31 @@
     <button class="addbtn" data-add="B">＋ Add player</button>
   </div>
 
+  <div style="height:18px"></div>
+</div>
+
+<div class="sheet-bg" id="notifSheetBg"></div>
+<div class="sheet" id="notifSheet">
+  <div class="grip"></div>
+  <div class="sheet-h"><div class="t">Alerts</div><button class="btn ghost sm" id="notifDoneBtn">Done</button></div>
+
+  <div class="np-section">Commentary banners</div>
+  <div class="np-seg" id="npBanners">
+    <button data-v="off" type="button">Off</button>
+    <button data-v="normal" type="button">Normal</button>
+    <button data-v="chatty" type="button">Chatty</button>
+  </div>
+  <div class="np-hint">The live trash-talk banners at the top of the app. Chatty adds extra chatter on pars and quiet stretches.</div>
+
+  <div class="np-row">
+    <div><b>Chat banners</b><span>A tappable banner when a new chat message arrives</span></div>
+    <button class="npswitch" id="npChat" type="button" aria-label="Toggle chat banners"></button>
+  </div>
+  <div class="np-row">
+    <div><b>Phone notifications</b><span>System notifications for your team’s score moves while the app is open</span></div>
+    <button class="npswitch" id="npDevice" type="button" aria-label="Toggle phone notifications"></button>
+  </div>
+  <div class="np-hint">Locked-phone alerts (app closed) come from the ntfy robot and aren’t affected by these settings.</div>
   <div style="height:18px"></div>
 </div>
 
@@ -982,7 +1023,7 @@ document.addEventListener('mmt:chat', (e)=>{
   chatUnread=msgs.filter(m=> m.ts>seen && m.uid!==uid).length;
   updateChatBadge();
   const latest=e.detail && e.detail.latestNew;
-  if(latest && latest.uid!==uid){
+  if(latest && latest.uid!==uid && NP.chatBanners){
     cmtEnqueue({ text:`${latest.team||'Chat'}: ${String(latest.text||'').slice(0,90)}`, emoji:'💬',
       side:(latest.side==='A'||latest.side==='B')?latest.side:undefined, dur:6000, kind:'chat',
       onTap:()=>{ VIEW='chat'; render(); window.scrollTo(0,0); } });
@@ -1456,7 +1497,14 @@ function detectChanges(){
     fireNotify(`${S.teams[side].name} · ${parPretty(tot.sum)}`, body);
   }
 }
+/* ---------------- Alert preferences (per-device, personal — not synced) ---------------- */
+const NPREF_KEY='mmt-notif-prefs';
+let NP=loadNP();
+function loadNP(){ try{ return Object.assign({banners:'normal', chatBanners:true, deviceNotifs:false}, JSON.parse(localStorage.getItem(NPREF_KEY)||'{}')); }catch(e){ return {banners:'normal', chatBanners:true, deviceNotifs:false}; } }
+function saveNP(){ localStorage.setItem(NPREF_KEY, JSON.stringify(NP)); }
+
 async function fireNotify(title, body){
+  if(!NP.deviceNotifs) return;
   if(!('Notification' in window) || Notification.permission!=='granted') return;
   try{
     const reg = await navigator.serviceWorker?.ready;
@@ -1465,19 +1513,32 @@ async function fireNotify(title, body){
   try{ new Notification(title,{body,icon:'icon-192.png'}); }catch(e){}
 }
 
-/* ---------------- Notify button ---------------- */
-async function toggleNotify(){
-  if(!('Notification' in window)){ toast('This browser can’t show notifications'); return; }
-  if(Notification.permission==='granted'){ setNotifyState(true); toast('You’ll get a buzz when '+S.teams[S.mine].name+' moves'); return; }
-  if(Notification.permission==='denied'){ toast('Notifications are blocked in browser settings'); return; }
-  const p=await Notification.requestPermission();
-  if(p==='granted'){ setNotifyState(true); fireNotify('Notifications on ⛳', `Tracking ${S.teams[S.mine].name}`); }
-  else toast('Notifications not enabled');
+/* ---------------- Alerts sheet (replaces the old all-or-nothing Notify button) ---------------- */
+function updateNotifyBar(){
+  const b=$('#notifyBtn'); if(!b) return;
+  b.textContent='🔔 Alerts';
+  const bits=[
+    'Banners: '+(NP.banners==='off'?'Off':NP.banners==='chatty'?'Chatty':'Normal'),
+    'Chat: '+(NP.chatBanners?'On':'Off'),
+    'Phone: '+(NP.deviceNotifs?'On':'Off')
+  ];
+  $('#notifyTxt').textContent=bits.join(' · ');
 }
-function setNotifyState(on){
-  const b=$('#notifyBtn');
-  if(on){ b.textContent='🔔 On'; b.classList.add('on'); $('#notifyTxt').textContent=`Buzzing for ${S.teams[S.mine].name} — keep this app open.`; }
-  else { b.textContent='🔔 Notify me'; b.classList.remove('on'); }
+function renderNotifSheet(){
+  document.querySelectorAll('#npBanners button').forEach(x=>x.classList.toggle('on', x.dataset.v===NP.banners));
+  $('#npChat').classList.toggle('on', !!NP.chatBanners);
+  $('#npDevice').classList.toggle('on', !!NP.deviceNotifs);
+}
+function openNotifSheet(){ renderNotifSheet(); $('#notifSheetBg').classList.add('show'); $('#notifSheet').classList.add('show'); }
+function closeNotifSheet(){ $('#notifSheetBg').classList.remove('show'); $('#notifSheet').classList.remove('show'); updateNotifyBar(); }
+async function toggleDeviceNotifs(){
+  if(NP.deviceNotifs){ NP.deviceNotifs=false; saveNP(); renderNotifSheet(); return; }
+  if(!('Notification' in window)){ toast('This browser can’t show notifications'); return; }
+  if(Notification.permission==='denied'){ toast('Notifications are blocked in your browser settings'); return; }
+  let perm=Notification.permission;
+  if(perm!=='granted') perm=await Notification.requestPermission();
+  if(perm==='granted'){ NP.deviceNotifs=true; saveNP(); renderNotifSheet(); fireNotify('Notifications on ⛳', `Tracking ${S.teams[S.mine].name}`); }
+  else toast('Notifications not enabled');
 }
 
 /* ---------------- Edit sheet ---------------- */
@@ -1631,7 +1692,7 @@ function runCommentary(){
     else if(rel===-1) evs.push(streak>=3?{pri:7,cat:'streak',side,player,streak}:{pri:5,cat:'birdie',side,player});
     else if(rel===1) evs.push({pri:4,cat:'bogey',side,player});
     else if(rel>=2) evs.push({pri:8,cat:'double',side,player});
-    else if(rel===0 && Math.random()<0.35) evs.push({pri:1,cat:'par',side,player});  // ambient chatter, keeps the feed lively
+    else if(rel===0 && Math.random()<(NP.banners==='chatty'?0.7:0.35)) evs.push({pri:1,cat:'par',side,player});  // ambient chatter, keeps the feed lively
     if(cur.holes>0 && cur.holes%18===0) evs.push({pri:3,cat:'finish',side,player});
   }
   const pL=cmtLeader(cmtPrev), cL=cmtLeader(snap);
@@ -1643,11 +1704,11 @@ function runCommentary(){
       else if(cL.diff===1 && pL.diff!==1) evs.push({pri:2,cat:'close',side:cL.side,diff:1});
     }
   }
-  if(!evs.length && Math.random()<0.3) evs.push({pri:1,cat:'filler',side:Math.random()<0.5?'A':'B'});
+  if(!evs.length && Math.random()<(NP.banners==='chatty'?0.6:0.3)) evs.push({pri:1,cat:'filler',side:Math.random()<0.5?'A':'B'});
   // feed real events (not ambient chatter) into the Match Story timeline
   evs.forEach(ev=>{ if(ev.cat!=='filler'&&ev.cat!=='par') recordEvent(ev.cat, ev.side, ev.player, (ev.diff!=null&&ev.diff!=='')?String(ev.diff):''); });
   evs.sort((a,b)=>b.pri-a.pri);
-  for(const ev of evs.slice(0,2)){
+  if(NP.banners!=='off') for(const ev of evs.slice(0,2)){
     const persona=personaFor(ev.side), opp=personaFor(ev.side==='A'?'B':'A');
     const ctx={ team:cmtName(persona), emoji:persona.emoji, opp:cmtName(opp), player:ev.player||'', diff:(ev.diff!=null?ev.diff:''), streak:(ev.streak!=null?ev.streak:'') };
     const line=cmtLine(persona, ev.cat);
@@ -1661,7 +1722,12 @@ $('#syncBtn').onclick=()=> sync(true);
 $('#editBtn').onclick=openSheet;
 $('#doneBtn').onclick=closeSheet;
 $('#sheetBg').onclick=closeSheet;
-$('#notifyBtn').onclick=toggleNotify;
+$('#notifyBtn').onclick=openNotifSheet;
+$('#notifDoneBtn').onclick=closeNotifSheet;
+$('#notifSheetBg').onclick=closeNotifSheet;
+document.querySelectorAll('#npBanners button').forEach(b=> b.onclick=()=>{ NP.banners=b.dataset.v; saveNP(); renderNotifSheet(); });
+$('#npChat').onclick=()=>{ NP.chatBanners=!NP.chatBanners; saveNP(); renderNotifSheet(); };
+$('#npDevice').onclick=toggleDeviceNotifs;
 $('#chatSendBtn').onclick=sendChat;
 $('#chatInput').addEventListener('keydown',(e)=>{ if(e.key==='Enter') sendChat(); });
 document.querySelectorAll('.story-mode').forEach(b=> b.onclick=()=>{ storyMode=b.dataset.mode; document.querySelectorAll('.story-mode').forEach(x=>x.classList.toggle('on',x===b)); renderStory(); });
@@ -1675,7 +1741,7 @@ document.querySelectorAll('[data-add]').forEach(b=> b.onclick=()=>{ const sd=b.d
   const rm=$('#rm'+side); if(rm) rm.onclick=()=>{ S.avatars[side]=''; save(); renderPrev(side); render(); };
 });
 
-if(Notification && Notification.permission==='granted') setNotifyState(true);
+updateNotifyBar();
 
 /* auto-refresh every 60s while visible + on focus */
 let timer=setInterval(()=>{ if(document.visibilityState==='visible') sync(); }, 60000);
@@ -1710,7 +1776,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-e';
+const BUILD_ID='2026-07-18-f';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
