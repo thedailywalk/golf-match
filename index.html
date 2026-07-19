@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Major Match">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=7">
+<link rel="apple-touch-icon" sizes="180x180" href="touch-icon-clean.png">
 <link rel="icon" href="icon.svg?v=7" type="image/svg+xml">
 <title>Major Match — Fantasy Golf</title>
 <meta name="description" content="Live fantasy golf with your crew — head-to-head rivalries, leaderboard leagues, salary-cap drafts, and trash talk.">
@@ -2966,7 +2966,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-u';
+const BUILD_ID='2026-07-18-v';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
