@@ -1,6 +1,6 @@
 // Major Match Tracker — service worker
 // Purpose: make the app installable + able to show notifications from the background.
-const CACHE = 'mmt-v2';
+const CACHE = 'mmt-v3';   // v3: new crest icon set — bump forces cached icons to refresh
 const ASSETS = [
   './',
   './index.html',
@@ -12,7 +12,12 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // fetch with cache:'reload' so a new cache version never inherits stale copies from the HTTP cache
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => Promise.all(ASSETS.map((u) => fetch(u, { cache: 'reload' }).then((r) => c.put(u, r)).catch(() => {}))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (e) => {

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Major Match">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon.svg?v=3" type="image/svg+xml">
+<link rel="icon" href="icon.svg?v=5" type="image/svg+xml">
 <title>Major Match — Fantasy Golf</title>
 <meta name="description" content="Live fantasy golf with your crew — head-to-head rivalries, leaderboard leagues, salary-cap drafts, and trash talk.">
 <meta property="og:title" content="Major Match — Fantasy Golf">
@@ -591,7 +591,7 @@
 
 <div id="authGate" class="authgate">
   <div class="authcard">
-    <div class="authlogo"><img src="icon.svg?v=3" alt="Major Match crest"></div>
+    <div class="authlogo"><img src="icon.svg?v=5" alt="Major Match crest"></div>
     <div class="auth-word">Fantasy Golf</div>
     <h1>Major Match</h1>
     <p>Sign in to keep your team synced across every phone.</p>
@@ -606,7 +606,7 @@
 
 <header>
   <div class="hrow">
-    <div class="brand"><img class="dot" src="icon.svg?v=3" alt=""> Major Match</div>
+    <div class="brand"><img class="dot" src="icon.svg?v=5" alt=""> Major Match</div>
     <div class="spacer"></div>
     <button class="iconbtn" id="homeBtn" title="My leagues">⌂</button>
     <button class="iconbtn" id="syncBtn" title="Sync now">↻</button>
@@ -2852,7 +2852,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-p';
+const BUILD_ID='2026-07-18-q';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
