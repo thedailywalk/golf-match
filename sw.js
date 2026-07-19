@@ -1,6 +1,6 @@
 // Major Match Tracker — service worker
 // Purpose: make the app installable + able to show notifications from the background.
-const CACHE = 'mmt-v3';   // v3: new crest icon set — bump forces cached icons to refresh
+const CACHE = 'mmt-v4';   // v4: clean icon refresh
 const ASSETS = [
   './',
   './index.html',

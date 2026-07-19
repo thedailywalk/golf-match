@@ -1,84 +1,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <!-- Major Match — the original flag-on-the-green, polished: night sky, glow, waving pennant -->
-  <style>@media (max-width:120px){ .wordmark{display:none} }</style><!-- tiny renders (header/badge) drop the text -->
+  <!-- Major Match — clean, elevated: deep navy, crisp flag on the green, ghosted wordmark -->
+  <style>@media (max-width:120px){ .wordmark{display:none} }</style>
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0d3350"/>
-      <stop offset=".6" stop-color="#0b2e4f"/>
-      <stop offset="1" stop-color="#071e33"/>
+      <stop offset="0" stop-color="#103a5e"/>
+      <stop offset=".55" stop-color="#0b2e4f"/>
+      <stop offset="1" stop-color="#06192b"/>
     </linearGradient>
-    <radialGradient id="glow" cx=".62" cy=".3" r=".55">
-      <stop offset="0" stop-color="#f4b740" stop-opacity=".28"/>
-      <stop offset="1" stop-color="#f4b740" stop-opacity="0"/>
+    <radialGradient id="sheen" cx=".5" cy=".26" r=".8">
+      <stop offset="0" stop-color="#7fd0ff" stop-opacity=".10"/>
+      <stop offset=".6" stop-color="#7fd0ff" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="greeng" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#46a856"/>
-      <stop offset="1" stop-color="#2b7a3a"/>
+      <stop offset="0" stop-color="#3fae56"/>
+      <stop offset="1" stop-color="#25753c"/>
     </linearGradient>
     <linearGradient id="goldg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffd97a"/>
-      <stop offset="1" stop-color="#e9a92a"/>
+      <stop offset="1" stop-color="#eca827"/>
     </linearGradient>
     <linearGradient id="poleg" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#cfd9e3"/>
+      <stop offset="1" stop-color="#d3dde6"/>
     </linearGradient>
     <radialGradient id="ballg" cx=".35" cy=".3" r=".9">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#d5dfe8"/>
+      <stop offset="1" stop-color="#d9e2ea"/>
     </radialGradient>
   </defs>
 
   <rect width="512" height="512" fill="url(#sky)"/>
+  <rect width="512" height="512" fill="url(#sheen)"/>
 
-  <!-- stars -->
-  <g fill="#ffffff">
-    <circle cx="64" cy="76" r="2.6" opacity=".7"/>
-    <circle cx="128" cy="46" r="2" opacity=".5"/>
-    <circle cx="186" cy="96" r="3" opacity=".8"/>
-    <circle cx="246" cy="52" r="2" opacity=".5"/>
-    <circle cx="330" cy="40" r="2.5" opacity=".6"/>
-    <circle cx="448" cy="90" r="2.6" opacity=".7"/>
-    <circle cx="470" cy="210" r="2.2" opacity=".5"/>
-    <circle cx="86" cy="180" r="2" opacity=".45"/>
-    <circle cx="44" cy="286" r="2.4" opacity=".55"/>
-    <circle cx="150" cy="256" r="2" opacity=".4"/>
-    <circle cx="392" cy="66" r="2" opacity=".45"/>
+  <!-- big ghosted wordmark, sitting behind the scene -->
+  <g class="wordmark" fill="#ffffff" opacity=".11" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="800" text-anchor="middle">
+    <text x="256" y="214" font-size="92" letter-spacing="5">FANTASY</text>
+    <text x="256" y="310" font-size="92" letter-spacing="24">GOLF</text>
   </g>
 
-  <rect width="512" height="512" fill="url(#glow)"/>
-
-  <!-- the green: rim, surface, sheen -->
-  <ellipse cx="256" cy="390" rx="172" ry="52" fill="#1b512c"/>
-  <ellipse cx="256" cy="382" rx="166" ry="47" fill="url(#greeng)"/>
-  <ellipse cx="230" cy="370" rx="112" ry="26" fill="#ffffff" opacity=".07"/>
+  <!-- the green: one clean surface + a whisper of depth -->
+  <ellipse cx="256" cy="396" rx="170" ry="48" fill="#0c3b1d" opacity=".55"/>
+  <ellipse cx="256" cy="388" rx="166" ry="46" fill="url(#greeng)"/>
+  <ellipse cx="234" cy="376" rx="110" ry="24" fill="#ffffff" opacity=".05"/>
 
   <!-- cup + pole -->
-  <ellipse cx="292" cy="388" rx="17" ry="7" fill="#0a3117"/>
-  <rect x="287" y="128" width="9" height="260" rx="4.5" fill="url(#poleg)"/>
-  <circle cx="291.5" cy="128" r="8" fill="#ffffff"/>
+  <ellipse cx="292" cy="392" rx="16" ry="6.5" fill="#082c14"/>
+  <rect x="287.5" y="132" width="8" height="260" rx="4" fill="url(#poleg)"/>
+  <circle cx="291.5" cy="132" r="7" fill="#ffffff"/>
 
-  <!-- waving gold pennant -->
-  <path d="M296 140 C 352 128 392 148 428 172 C 390 192 348 206 296 214 Z" fill="url(#goldg)"/>
-  <path d="M296 140 C 352 128 392 148 428 172 C 390 192 348 206 296 214 Z" fill="#000000" opacity=".06"/>
-  <path d="M296 140 C 322 136 348 138 372 146 C 348 150 322 152 296 154 Z" fill="#ffffff" opacity=".22"/>
+  <!-- crisp waving pennant -->
+  <path d="M296 144 C 352 132 392 152 428 176 C 390 196 348 210 296 218 Z" fill="url(#goldg)"/>
+  <path d="M296 144 C 340 136 374 146 402 162 C 368 164 330 166 296 166 Z" fill="#ffffff" opacity=".16"/>
 
   <!-- ball -->
-  <ellipse cx="190" cy="406" rx="42" ry="9" fill="#0a3117" opacity=".45"/>
-  <circle cx="190" cy="374" r="34" fill="url(#ballg)"/>
-  <g fill="#b9c6d2" opacity=".7">
-    <circle cx="178" cy="364" r="3.4"/>
-    <circle cx="192" cy="360" r="3.4"/>
-    <circle cx="184" cy="376" r="3.4"/>
-    <circle cx="198" cy="372" r="3.4"/>
-    <circle cx="190" cy="388" r="3.4"/>
-    <circle cx="204" cy="384" r="3.4"/>
+  <ellipse cx="190" cy="410" rx="38" ry="8" fill="#04200e" opacity=".35"/>
+  <circle cx="190" cy="378" r="34" fill="url(#ballg)"/>
+  <g fill="#b9c6d2" opacity=".45">
+    <circle cx="180" cy="368" r="3.2"/>
+    <circle cx="196" cy="364" r="3.2"/>
+    <circle cx="186" cy="382" r="3.2"/>
+    <circle cx="202" cy="378" r="3.2"/>
+    <circle cx="194" cy="392" r="3.2"/>
   </g>
 
-  <!-- sparkle at the flag tip -->
-  <path d="M438 132 l4.5 12 12 4.5 -12 4.5 -4.5 12 -4.5 -12 -12 -4.5 12 -4.5 Z" fill="#ffe9ae" opacity=".9"/>
-
-  <!-- wordmark -->
-  <text class="wordmark" x="256" y="486" text-anchor="middle" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif"
-        font-size="34" font-weight="800" letter-spacing="7" fill="url(#goldg)">FANTASY GOLF</text>
 </svg>

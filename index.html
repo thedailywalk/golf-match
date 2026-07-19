@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Major Match">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="icon.svg?v=5" type="image/svg+xml">
+<link rel="icon" href="icon.svg?v=7" type="image/svg+xml">
 <title>Major Match — Fantasy Golf</title>
 <meta name="description" content="Live fantasy golf with your crew — head-to-head rivalries, leaderboard leagues, salary-cap drafts, and trash talk.">
 <meta property="og:title" content="Major Match — Fantasy Golf">
@@ -52,16 +52,9 @@
   /* Sign-in gate */
   .authgate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;
     background:
-      radial-gradient(1.6px 1.6px at 12% 18%, rgba(255,255,255,.8), transparent 60%),
-      radial-gradient(1.2px 1.2px at 78% 9%, rgba(255,255,255,.6), transparent 60%),
-      radial-gradient(2px 2px at 62% 26%, rgba(255,255,255,.75), transparent 60%),
-      radial-gradient(1.2px 1.2px at 30% 8%, rgba(255,255,255,.5), transparent 60%),
-      radial-gradient(1.6px 1.6px at 88% 34%, rgba(255,255,255,.55), transparent 60%),
-      radial-gradient(1.2px 1.2px at 45% 15%, rgba(255,255,255,.45), transparent 60%),
-      radial-gradient(1.6px 1.6px at 8% 42%, rgba(255,255,255,.4), transparent 60%),
-      radial-gradient(900px 420px at 50% 118%, rgba(47,143,71,.5), transparent 70%),
-      radial-gradient(700px 380px at 50% 42%, rgba(244,183,64,.14), transparent 70%),
-      linear-gradient(170deg,#061a2e,#0b2e4f 55%,#0e3d5c);}
+      radial-gradient(900px 420px at 50% 118%, rgba(47,143,71,.45), transparent 70%),
+      radial-gradient(760px 400px at 50% 22%, rgba(127,208,255,.09), transparent 65%),
+      linear-gradient(170deg,#103a5e,#0b2e4f 55%,#06192b);}
   .authgate.hide{display:none}
   .authcard{width:100%;max-width:360px;background:var(--card);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.45);
     padding:30px 26px 26px;text-align:center;border:1px solid var(--line)}
@@ -593,7 +586,7 @@
 
 <div id="authGate" class="authgate">
   <div class="authcard">
-    <div class="authlogo"><img src="icon.svg?v=5" alt="Major Match crest"></div>
+    <div class="authlogo"><img src="icon.svg?v=7" alt="Major Match crest"></div>
     <div class="auth-word">Fantasy Golf</div>
     <h1>Major Match</h1>
     <p>Sign in to keep your team synced across every phone.</p>
@@ -608,7 +601,7 @@
 
 <header>
   <div class="hrow">
-    <div class="brand"><img class="dot" src="icon.svg?v=5" alt=""> Major Match</div>
+    <div class="brand"><img class="dot" src="icon.svg?v=7" alt=""> Major Match</div>
     <div class="spacer"></div>
     <button class="iconbtn" id="homeBtn" title="My leagues">⌂</button>
     <button class="iconbtn" id="syncBtn" title="Sync now">↻</button>
@@ -808,7 +801,8 @@
         <button type="button" class="fmt-opt tpl-opt" data-tpl="classic"><b>🎯 Points Classic</b><span>Group · fantasy points</span></button>
         <button type="button" class="fmt-opt tpl-opt" data-tpl="showdown"><b>💰 Salary Showdown</b><span>$100K cap · points</span></button>
         <button type="button" class="fmt-opt tpl-opt" data-tpl="bestball"><b>⛳ Best Ball</b><span>Best 4 of 6 count</span></button>
-        <button type="button" class="fmt-opt tpl-opt" data-tpl="custom"><b>🛠️ Custom</b><span>Choose every rule yourself</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="oad"><b>🔁 One-and-Done</b><span>Season · 1 pick, no reuse</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="custom" style="grid-column:1/-1"><b>🛠️ Custom</b><span>Choose every rule yourself</span></button>
       </div>
       <div class="np-hint" id="tplHint" style="margin:8px 0 0"></div>
     </div>
@@ -823,6 +817,7 @@
         <button type="button" class="fmt-opt sco-opt sel" data-sco="total"><b>🟢 Total score</b><span>Golfers’ scores to par are combined. Lowest total wins — classic golf.</span></button>
         <button type="button" class="fmt-opt sco-opt" data-sco="points"><b>🎯 Fantasy points</b><span>Golfers earn points by finish + cut bonuses. Most points wins.</span></button>
         <button type="button" class="fmt-opt sco-opt" data-sco="bestball"><b>⛳ Best ball</b><span>Only your best 4 scores count — the worst are dropped. Lowest total wins.</span></button>
+        <button type="button" class="fmt-opt sco-opt" data-sco="oad"><b>🔁 One-and-Done</b><span>Season-long: one golfer per tournament, never reused. Most points wins.</span></button>
       </div>
     </div>
     <div class="field" id="lgRosterField" style="display:none"><label>Roster</label>
@@ -1607,7 +1602,7 @@ function renderHome(){
     const m=metas[id]||{};
     const isLb=m.format==='lb';
     const teams = isLb
-      ? `🏆 ${m.teamCount||0} ${(m.teamCount===1?'team':'teams')} · ${m.scoring==='points'?'Points':m.scoring==='bestball'?'Best ball':'Total score'}${m.roster==='cap'?' · 💰 Cap':''}`
+      ? `🏆 ${m.teamCount||0} ${(m.teamCount===1?'team':'teams')} · ${m.scoring==='points'?'Points':m.scoring==='bestball'?'Best ball':m.scoring==='oad'?'One-and-Done':'Total score'}${m.roster==='cap'?' · 💰 Cap':''}`
       : `<b>${esc(m.teamA||'Team A')}</b> vs <b>${esc(m.teamB||'Waiting for opponent')}</b>`;
     return `<div class="lgcard${id===ACTIVE_LEAGUE?' active':''}" data-lg="${esc(id)}">
       <div class="lg-top"><span class="lg-name">${esc(m.name||id)}</span>${id===ACTIVE_LEAGUE?'<span class="lg-live">Active</span>':''}</div>
@@ -1674,7 +1669,9 @@ function renderLobby(id, d){
   const isHost = meta.createdBy ? meta.createdBy===uid
     : (Object.keys(members).length ? Object.values(members).includes(uid) : true);  // legacy league: members manage it
   const lb = (meta.format||'h2h')==='lb';
-  const fmt = lb ? ('Leaderboard · '+(meta.scoring==='points'?'Points':meta.scoring==='bestball'?'Best ball':'Total score')+(meta.roster==='cap'?' · Salary cap':'')) : ((meta.format||'h2h')==='h2h' ? 'Head-to-head' : meta.format);
+  const oadL = lb && meta.scoring==='oad';
+  const lockedNow = lb && (meta.locked===true || (meta.locked!==false && meta.autoLock===true && EVENT.status!=='pre'));
+  const fmt = lb ? ('Leaderboard · '+(meta.scoring==='points'?'Points':meta.scoring==='bestball'?'Best ball':oadL?'One-and-Done':'Total score')+(meta.roster==='cap'?' · Salary cap':'')) : ((meta.format||'h2h')==='h2h' ? 'Head-to-head' : meta.format);
   let teamsHtml, teamsLabel='Teams', opponentPresent=false;
   if(lb){
     const entries=d.entries||{};
@@ -1682,6 +1679,11 @@ function renderLobby(id, d){
     teamsLabel=`Teams · ${list.length}`;
     const need=Number(meta.rosterSize)||6;
     teamsHtml = list.length ? list.map(e=>{
+      if(oadL){
+        const pick=(e.players||[])[0], events=Object.keys(e.oadHistory||{}).length;
+        const ready=!!pick, cls=ready?'ready':'warn';
+        return `<div class="lob-row"><span class="lob-dot ${cls}"></span><div class="lob-t"><b>${esc(e.name||'Team')}${e.uid===uid?' · You':''}</b><span>${ready?`This week: ${esc(pick)}`:'Needs a pick'}${events?` · ${events} banked`:''}</span></div><span class="lob-pill ${cls}">${ready?'Picked':'Waiting'}</span></div>`;
+      }
       const count=(e.players||[]).filter(p=>p&&String(p).trim()).length, ready=count>=need, cls=ready?'ready':'warn';
       return `<div class="lob-row"><span class="lob-dot ${cls}"></span><div class="lob-t"><b>${esc(e.name||'Team')}${e.uid===uid?' · You':''}</b><span>${ready?`Roster set · ${need} golfers`:count+'/'+need+' golfers'}</span></div><span class="lob-pill ${cls}">${ready?'Ready':count+'/'+need}</span></div>`;
     }).join('') : '<div class="home-empty">No teams yet — share the code below.</div>';
@@ -1694,6 +1696,7 @@ function renderLobby(id, d){
   $('#lobbyBody').innerHTML=`
     <div class="lob-meta">
       <span class="wkb-pill">${esc(fmt)}</span>
+      ${lockedNow?'<span class="wkb-pill">🔒 Locked</span>':''}
       <span class="lob-event">${esc(EVENT.name||'Next tournament')}${EVENT.status==='in'?' · LIVE':EVENT.status==='post'?' · Final':''}</span>
     </div>
     <div class="lob-sec">Invite</div>
@@ -1708,10 +1711,18 @@ function renderLobby(id, d){
     <div class="lob-sec">Host controls</div>
     <div class="lob-host">
       <button class="btn ghost sm" id="lobRename">✏️ Rename league</button>
+      ${lb?`<button class="btn ghost sm" id="lobLock">${lockedNow?'🔓 Unlock lineups':'🔒 Lock lineups now'}</button>
+      <button class="btn ghost sm" id="lobAuto">Auto-lock at tee-off: ${meta.autoLock?'On':'Off'}</button>`:''}
       ${opponentPresent?`<button class="btn ghost sm" id="lobKick">Remove opponent</button>`:''}
       <button class="btn ghost sm danger" id="lobDelete">Delete league</button>
     </div>`:''}
     <div class="field" style="margin-top:14px"><button class="btn" id="lobEnter" style="width:100%">Enter league →</button></div>`;
+  const lk=$('#lobLock'); if(lk) lk.onclick=async ()=>{
+    await window.__league.setLockCfg(id,{locked:!lockedNow}); toast(lockedNow?'Lineups unlocked 🔓':'Lineups locked 🔒'); openLobby(id);
+  };
+  const al=$('#lobAuto'); if(al) al.onclick=async ()=>{
+    await window.__league.setLockCfg(id,{autoLock:!meta.autoLock}); toast(meta.autoLock?'Auto-lock off':'Auto-lock on — lineups freeze at tee-off'); openLobby(id);
+  };
   $('#lobCopy').onclick=()=>navigator.clipboard?.writeText(meta.code||'').then(()=>toast('Code copied 🔑'));
   $('#lobShare').onclick=()=>{
     const txt=`Join my golf league “${meta.name}” on Major Match! Code: ${meta.code} — ${location.origin+location.pathname}`;
@@ -1743,9 +1754,19 @@ function renderLobby(id, d){
 /* ---------------- Leaderboard-format leagues: N teams race — lowest combined score OR most fantasy points ---------------- */
 let lbExpanded=new Set();
 function isLB(){ return window.LEAGUE_FORMAT==='lb'; }
-function isPoints(){ return isLB() && (window.__lbMeta?.scoring==='points'); }       // scoring axis: 'total' (default) | 'points' | 'bestball'
+function isPoints(){ return isLB() && (window.__lbMeta?.scoring==='points'); }       // scoring axis: 'total' (default) | 'points' | 'bestball' | 'oad'
 function isBestBall(){ return isLB() && (window.__lbMeta?.scoring==='bestball'); }   // best N scores count, worst dropped
 function lbBestN(){ return Number(window.__lbMeta?.bestN)||4; }
+function isOAD(){ return isLB() && (window.__lbMeta?.scoring==='oad'); }             // one-and-done: one pick per tournament, no reuse
+function oadEventKey(){ return ((norm(EVENT.name||'').replace(/ +/g,'-'))||'event')+'-'+new Date().getFullYear(); }
+/* Lineup locks: host can lock manually (meta.locked) or auto-lock once the tournament tees off (meta.autoLock).
+   A manual unlock (locked:false) overrides auto-lock — the host's call always wins. */
+function lbLocked(){
+  const m=window.__lbMeta||{};
+  if(m.locked===true) return true;
+  if(m.locked===false) return false;
+  return m.autoLock===true && EVENT.status!=='pre';
+}
 function lbMyEntry(){ const uid=window.currentUser?.uid; return (uid && (window.__lbEntries||{})[uid]) || null; }
 
 /* Points scoring — all derived live from ESPN's per-hole data we already parse.
@@ -1825,10 +1846,26 @@ function golferPoints(l, cfg){
   return { total:placement+perf+cut, placement, perf, cut, madeCut, missed, posN, birdies, eagles, albatross, bogeys, doubles, aces };
 }
 function lbTotals(){
-  const out=[], entries=window.__lbEntries||{}, points=isPoints(), bb=isBestBall(), bestN=lbBestN(), cfg=points?effPointsCfg():null;
+  const out=[], entries=window.__lbEntries||{}, points=isPoints(), bb=isBestBall(), bestN=lbBestN(), oad=isOAD(), cfg=(points||oad)?effPointsCfg():null;
   for(const uid in entries){
     const e=entries[uid], players=e.players||[];
     let sum=0, counted=0, live=0, cutMakers=0; const perPlayer=[];
+    if(oad){
+      // one-and-done: season = banked points from past tournaments + this week's pick scoring live
+      const hist=e.oadHistory||{}, key=oadEventKey();
+      let season=0, events=0;
+      for(const k in hist){ season+=Number(hist[k]?.pts)||0; events++; }
+      const pick=String((players[0]||'')).trim();
+      const banked=!!hist[key];
+      let liveP=0, l=null, gp=null;
+      if(pick && !banked && EVENT.status!=='pre'){
+        l=LIVE[norm(pick)]||null;
+        if(l){ gp=golferPoints(l,cfg); liveP=gp.total; if(l.live) live++; }
+      }
+      out.push({uid, name:e.name||'Team', players, sum:season+liveP, counted:events+((pick&&!banked)?1:0), live,
+                perPlayer:[], oad:{season, events, pick, banked, liveP, l, gp, hist}});
+      continue;
+    }
     for(const p of players){
       const l=LIVE[norm(p)];
       if(points){
@@ -1852,18 +1889,48 @@ function lbTotals(){
     const teamBonus = points ? cfg.cutBonus[Math.min(cutMakers, cfg.cutBonus.length-1)] : 0;
     out.push({uid, name:e.name||'Team', players, sum:sum+teamBonus, rawSum:sum, teamBonus, cutMakers, counted, live, perPlayer});
   }
-  // total & best ball: lowest wins · points: highest wins
-  out.sort((a,b)=> (b.counted?1:0)-(a.counted?1:0) || (points? b.sum-a.sum : a.sum-b.sum) || a.name.localeCompare(b.name));
+  // total & best ball: lowest wins · points & one-and-done: highest wins
+  const desc = points || oad;
+  out.sort((a,b)=> (b.counted?1:0)-(a.counted?1:0) || (desc? b.sum-a.sum : a.sum-b.sum) || a.name.localeCompare(b.name));
   return out;
 }
 function renderLB(){
   if(!isLB()) return;
   const host=$('#lbStandings'); if(!host) return;
-  const rows=lbTotals(), uid=window.currentUser?.uid, points=isPoints();
+  const rows=lbTotals(), uid=window.currentUser?.uid, points=isPoints(), oadMode=isOAD();
   if(!rows.length){ host.innerHTML='<div class="home-empty">No teams yet — share the invite code!</div>'; return; }
+  // one-and-done: once the tournament is final, bank MY result into season history (each phone banks its own)
+  if(oadMode && EVENT.status==='post' && uid && window.__league?.bankOad && !window.__oadBankInFlight){
+    const mine=rows.find(r=>r.uid===uid);
+    if(mine && mine.oad.pick && !mine.oad.banked && mine.oad.gp){
+      window.__oadBankInFlight=true;
+      window.__league.bankOad(oadEventKey(), {event:EVENT.name||'', pick:mine.oad.pick, pts:mine.oad.gp.total})
+        .then(()=>toast(`Banked ${mine.oad.pick} · +${mine.oad.gp.total} pts ✅`))
+        .catch(()=>{})
+        .finally(()=>{ window.__oadBankInFlight=false; });
+    }
+  }
   const leader=rows.find(r=>r.counted);
   host.innerHTML=rows.map((r,i)=>{
     const open=lbExpanded.has(r.uid);
+    if(oadMode){
+      const o=r.oad||{};
+      let detail='';
+      if(open){
+        const cur = o.pick
+          ? `<div class="lbp"><b>${esc(o.pick)}</b><i>${o.banked?'banked ✓':(o.l?esc(onCourseLabel(o.l)):'not scoring yet')}</i><span class="sc lbpts">${o.banked?'':(o.l?o.liveP:'—')}</span></div>`
+          : `<div class="lbp"><b>No pick yet</b><i>${esc(EVENT.name||'this week')}</i><span class="sc">—</span></div>`;
+        const hk=Object.keys(o.hist||{}).sort();
+        const histRows=hk.map(k=>{ const h=o.hist[k]||{}; return `<div class="lbp"><b>${esc(h.event||k)}</b><i>${esc(h.pick||'')}</i><span class="sc lbpts">${Number(h.pts)||0}</span></div>`; }).join('');
+        detail=`<div class="lbdetail">${cur}${histRows?`<div class="lbp lbp-bonus"><b>Season history</b><span class="sc"></span></div>${histRows}`:''}</div>`;
+      }
+      const sub=`${o.events||0} banked${(o.pick&&!o.banked)?` · ${esc(o.pick)} this week`:''}`;
+      return `<div class="lbrow${i===0?' first':''}${r.uid===uid?' me':''}" data-lbx="${esc(r.uid)}">
+        <span class="lbrank">${i+1}</span>
+        <div class="lbinfo"><b>${esc(r.name)}${r.uid===uid?' · You':''}</b><span>${sub}</span></div>
+        <span class="lbtot lbpts">${r.counted?r.sum:'—'}${r.counted?'<span class="lbunit">pts</span>':''}</span>
+      </div>${detail}`;
+    }
     let detail='';
     if(open){
       const prows=r.perPlayer.map(pp=>{
@@ -1904,19 +1971,36 @@ document.addEventListener('mmt:lbUpdated', ()=>{
   render();
 });
 function openLbEdit(){
+  if(lbLocked()){ toast('Lineups are locked 🔒'); return; }
   if(isCap()){ openCapBuilder(); return; }   // salary leagues use the cap builder, not the free-type editor
   const e=lbMyEntry(); if(!e){ toast('Join this league first'); return; }
   $('#lbTeamName').value=e.name||'';
-  $('#lbPlayers').innerHTML=(e.players&&e.players.length?e.players:['','','','','','']).slice(0,6)
-    .map((p,i)=>`<input type="text" class="authinput" style="margin-bottom:8px;text-align:left" data-lbp="${i}" value="${esc(p)}" placeholder="Golfer ${i+1}">`).join('');
+  if(isOAD()){
+    // one pick this week + the golfers you've burned for the season
+    const used=Object.values(e.oadHistory||{}).map(h=>h&&h.pick).filter(Boolean);
+    $('#lbPlayers').innerHTML=
+      `<input type="text" class="authinput" style="margin-bottom:8px;text-align:left" data-lbp="0" value="${esc((e.players||[])[0]||'')}" placeholder="Your golfer for ${esc(EVENT.name||'this week')}">`
+      + (used.length?`<div class="np-hint" style="margin:6px 0 0">Already used (can’t pick again): ${esc(used.join(', '))}</div>`:'');
+  } else {
+    $('#lbPlayers').innerHTML=(e.players&&e.players.length?e.players:['','','','','','']).slice(0,6)
+      .map((p,i)=>`<input type="text" class="authinput" style="margin-bottom:8px;text-align:left" data-lbp="${i}" value="${esc(p)}" placeholder="Golfer ${i+1}">`).join('');
+  }
   $('#lbEditBg').classList.add('show'); $('#lbEditSheet').classList.add('show');
 }
 function closeLbEdit(){ $('#lbEditBg').classList.remove('show'); $('#lbEditSheet').classList.remove('show'); }
 function openLbRules(){
-  const pts=isPoints(), bb=isBestBall();
-  $('#lbRulesTitle').textContent = pts? 'Points scoring' : bb? 'Best-ball scoring' : 'Total-score scoring';
+  const pts=isPoints(), bb=isBestBall(), oad=isOAD();
+  $('#lbRulesTitle').textContent = pts? 'Points scoring' : bb? 'Best-ball scoring' : oad? 'One-and-Done' : 'Total-score scoring';
   let body;
-  if(pts){
+  if(oad){
+    const cfg=effPointsCfg();
+    const labels=['1st','2nd','3rd','4th–5th','6th–10th','11th–15th','16th–20th','21st–30th','31st–40th','41st–50th','51st +'];
+    const placeRows=cfg.placement.map((row,i)=>`<tr><td>${labels[i]||'—'}</td><td>${row[1]}</td></tr>`).join('');
+    body=`<div class="scoring-note">Season-long. Each tournament you pick <b>exactly one golfer</b> — and once you've used a golfer, you can <b>never pick them again</b> all season. Your golfer earns placement points, banked automatically when the tournament ends. <b>Most season points wins.</b></div>
+      <div class="scoring-sec">Placement points</div>
+      <table class="scoring-tbl"><thead><tr><th>Finish</th><th>Points</th></tr></thead><tbody>${placeRows}<tr><td>Missed cut</td><td>0</td></tr></tbody></table>
+      <div class="scoring-note">Tap any team in the standings to see this week's pick and their full season history. Spend your stars wisely — Scheffler only works once. 😉</div>`;
+  } else if(pts){
     const cfg=effPointsCfg();
     const labels=['1st','2nd','3rd','4th–5th','6th–10th','11th–15th','16th–20th','21st–30th','31st–40th','41st–50th','51st +'];
     const placeRows=cfg.placement.map((row,i)=>`<tr><td>${labels[i]||'—'}</td><td>${row[1]}</td></tr>`).join('');
@@ -2124,6 +2208,7 @@ function renderCapBuilder(){
     $('#capSaveBtn').onclick=async ()=>{
       const nm=($('#capTeamName').value||'').trim();
       if(!nm){ toast('Name your team'); return; }
+      if(lbLocked()){ toast('Lineups are locked 🔒'); return; }
       const stNow=capStatus(); if(!stNow.ok){ toast(stNow.txt); return; }
       $('#capSaveBtn').disabled=true; $('#capSaveBtn').textContent='Saving…';
       try{ await window.__league.saveMyLbTeam(nm, capPick.slice()); closeCapBuilder(); toast(capPick.length>=need?'Lineup submitted 🔒':'Draft saved — finish it before tee time'); }
@@ -2145,12 +2230,12 @@ function renderLbView(){
   $('#lbView').style.display = (MODE==='home'||chat)? 'none':'';
   $('#chatView').style.display = chat? '':'none';
   if(chat) renderChat(); else renderLB();
-  const pts = isPoints(), bb = isBestBall();
-  // header: tournament + scoring format; keep the "Scoring" info button in sync
-  const eh=$('#lbEventName'); if(eh) eh.textContent = (EVENT.name ? (EVENT.name + (EVENT.status==='in'?' · Live':EVENT.status==='post'?' · Final':'')) : '') + (pts?' · Points': bb?` · Best ${lbBestN()}`:'');
+  const pts = isPoints(), bb = isBestBall(), oad = isOAD();
+  // header: tournament + scoring format + lock state; keep the "Scoring" info button in sync
+  const eh=$('#lbEventName'); if(eh) eh.textContent = (EVENT.name ? (EVENT.name + (EVENT.status==='in'?' · Live':EVENT.status==='post'?' · Final':'')) : '') + (pts?' · Points': bb?` · Best ${lbBestN()}`: oad?' · One-and-Done':'') + (lbLocked()?' · 🔒 Locked':'');
   const rb=$('#lbRulesBtn'); if(rb) rb.style.display = MODE==='home'? 'none':'';
   renderModeVisibility();
-  $('#foot').innerHTML = `Scores from ESPN’s public golf feed · ${pts?'most fantasy points wins': bb?`best ${lbBestN()} scores count · lowest total wins`:'lowest combined score wins'}.<br>Add to Home Screen for the full-screen app.`;
+  $('#foot').innerHTML = `Scores from ESPN’s public golf feed · ${pts?'most fantasy points wins': bb?`best ${lbBestN()} scores count · lowest total wins`: oad?'one golfer per tournament, never reused · most season points wins':'lowest combined score wins'}.<br>Add to Home Screen for the full-screen app.`;
 }
 
 function renderWhoami(){
@@ -2754,8 +2839,16 @@ $('#lbSaveBtn').onclick=async ()=>{
   const players=[...document.querySelectorAll('#lbPlayers [data-lbp]')].map(i=>i.value.trim()).filter(Boolean);
   if(!nm){ toast('Name your team'); return; }
   if(!window.__league){ toast('Sign in first'); return; }
+  if(lbLocked()){ toast('Lineups are locked 🔒'); return; }
+  if(isOAD()){
+    // season rule: a golfer can only ever be used once
+    const e=lbMyEntry()||{};
+    const used=Object.values(e.oadHistory||{}).map(h=>h&&h.pick).filter(Boolean);
+    const pick=players[0]||'';
+    if(pick && used.some(u=>norm(u)===norm(pick))){ toast(`You already used ${pick} this season 🚫`); return; }
+  }
   $('#lbSaveBtn').disabled=true; $('#lbSaveBtn').textContent='Saving…';
-  try{ await window.__league.saveMyLbTeam(nm, players); closeLbEdit(); toast('Team saved ☁️'); }
+  try{ await window.__league.saveMyLbTeam(nm, players); closeLbEdit(); toast(isOAD()?'Pick locked in 🎯':'Team saved ☁️'); }
   catch(e){ toast(e?.message||'Save failed'); }
   finally{ $('#lbSaveBtn').disabled=false; $('#lbSaveBtn').textContent='Save team'; }
 };
@@ -2767,6 +2860,7 @@ const TEMPLATES={
   classic:{ fmt:'lb', sco:'points', ros:'open', hint:'Any number of teams · 6 golfers · placement points + cut bonuses · highest points wins.' },
   showdown:{ fmt:'lb', sco:'points', ros:'cap', hint:'Draft 8 golfers under a $100,000 cap · placement points + cut bonuses · highest points wins.' },
   bestball:{ fmt:'lb', sco:'bestball', ros:'open', hint:'Any number of teams · 6 golfers · only your best 4 scores count, worst 2 dropped · lowest total wins.' },
+  oad:{ fmt:'lb', sco:'oad', ros:'open', hint:'Season-long · pick ONE golfer each tournament · placement points, banked automatically · never reuse a golfer.' },
   custom:{ hint:'Pick the format, scoring, and roster rules yourself below.' }
 };
 window.lgTemplate='rivalry';
@@ -2872,7 +2966,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-r';
+const BUILD_ID='2026-07-18-t';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
@@ -3101,12 +3195,14 @@ window.__league = {
     const defaults=structuredClone(window.__defaultTeams||{A:{name:'Team A',players:[]},B:{name:'Team B',players:[]}});
     if(format==='lb'){
       const cap = roster==='cap';
-      const sco = ['points','bestball'].includes(scoring)? scoring : 'total';
+      const sco = ['points','bestball','oad'].includes(scoring)? scoring : 'total';
+      const oad = sco==='oad';
       await setDoc(doc(fbDb,'leagues',id),{
-        // cap leagues start with an empty roster — you draft under the budget in the builder
-        entries:{ [uid]:{ name:teamName, players:(cap?[]:defaults.A.players), owner:uid } },
+        // cap leagues start with an empty roster (draft in the builder) · one-and-done starts with no pick
+        entries:{ [uid]:{ name:teamName, players:((cap||oad)?[]:defaults.A.players), owner:uid, ...(oad?{oadHistory:{}}:{}) } },
         meta:{ name, code, format:'lb', scoring:sco, ...(sco==='bestball'?{bestN:4}:{}),
                roster:(cap?'cap':'open'), ...(cap?{cap:100000, rosterSize:8}:{}),
+               autoLock:true,   // new leaderboard leagues freeze lineups at tee-off by default
                createdBy:uid, createdAt:serverTimestamp() },
         createdAt:serverTimestamp(), updatedAt:serverTimestamp()
       });
@@ -3132,8 +3228,9 @@ window.__league = {
       // leaderboard league: everyone gets their own team entry, no slot limit
       if(!d.entries?.[uid]){
         const defaults=structuredClone(window.__defaultTeams||{A:{players:[]}});
-        const players = d.meta?.roster==='cap' ? [] : defaults.A.players;   // cap leagues: draft in the builder
-        await setDoc(doc(fbDb,'leagues',id),{ entries:{ [uid]:{ name:teamName, players, owner:uid } } },{merge:true});
+        const oadJ = d.meta?.scoring==='oad';
+        const players = (d.meta?.roster==='cap' || oadJ) ? [] : defaults.A.players;   // cap: draft in the builder · oad: pick weekly
+        await setDoc(doc(fbDb,'leagues',id),{ entries:{ [uid]:{ name:teamName, players, owner:uid, ...(oadJ?{oadHistory:{}}:{}) } } },{merge:true});
       }
     } else {
       const members=d.meta?.members||{};
@@ -3160,6 +3257,15 @@ window.__league = {
   async saveSalaries(map){
     const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
     await setDoc(doc(fbDb,'leagues',LEAGUE_ID),{ meta:{ salaries: map===null? deleteField() : map } },{merge:true});
+  },
+  async bankOad(eventKey, data){
+    // one-and-done: write MY final result for this tournament into season history (idempotent per event)
+    const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
+    await setDoc(doc(fbDb,'leagues',LEAGUE_ID),{ entries:{ [uid]:{ oadHistory:{ [eventKey]: data } } } },{merge:true});
+  },
+  async setLockCfg(id, patch){
+    const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
+    await setDoc(doc(fbDb,'leagues',id),{ meta:patch },{merge:true});
   }
 };
 
