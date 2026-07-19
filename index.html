@@ -498,6 +498,15 @@
   .cap-row.in .cap-btn{background:var(--gold);border-color:var(--gold);color:#3a2a00}
   .cap-btn.rm{color:#c43c3c;border-color:rgba(196,60,60,.4)}
   @media (prefers-color-scheme:dark){ .cap-tabs button.on{background:var(--gold);color:#3a2a00} .cap-status.good{color:#6fcf97} }
+  .sal-row{cursor:default}
+  .sal-in{width:92px;flex:none;padding:7px 6px;border-radius:10px;border:1.5px solid var(--line);background:var(--card,#fff);color:var(--text);font-weight:800;font-size:13px;text-align:right}
+  .sal-in:focus{outline:none;border-color:var(--gold)}
+  .sal-row.edited{background:rgba(244,183,64,.10)}
+  .sal-row.edited .sal-in{border-color:var(--gold)}
+  .tpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tpl-grid .fmt-opt{padding:10px 11px}
+  .tpl-grid .fmt-opt b{font-size:13px}
+  .tpl-grid .fmt-opt span{font-size:10.5px;margin-top:1px}
 
   /* Lobby */
   .lob-meta{display:flex;align-items:center;gap:10px;margin:14px 16px 2px;flex-wrap:wrap}
@@ -768,7 +777,17 @@
   <div id="leagueCreateForm">
     <div class="field"><label>League name</label><input type="text" id="lgName" maxlength="40" placeholder="Sunday Major Showdown"></div>
     <div class="field"><label>Your team name</label><input type="text" id="lgTeam" maxlength="40" placeholder="Bogey Bird Sparkle Shark"></div>
-    <div class="field"><label>Format</label>
+    <div class="field"><label>Quick start</label>
+      <div class="tpl-grid">
+        <button type="button" class="fmt-opt tpl-opt sel" data-tpl="rivalry"><b>⚔️ Rivalry</b><span>You vs one opponent</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="quick"><b>🟢 Quick Match</b><span>Group · lowest score</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="classic"><b>🎯 Points Classic</b><span>Group · fantasy points</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="showdown"><b>💰 Salary Showdown</b><span>$100K cap · points</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="custom" style="grid-column:1/-1"><b>🛠️ Custom</b><span>Choose every rule yourself</span></button>
+      </div>
+      <div class="np-hint" id="tplHint" style="margin:8px 0 0"></div>
+    </div>
+    <div class="field" id="lgFormatField" style="display:none"><label>Format</label>
       <div class="fmt-pick">
         <button type="button" class="fmt-opt sel" data-fmt="h2h"><b>⚔️ Head-to-head</b><span>You vs one opponent. Weekend lineups, win odds, the full rivalry experience.</span></button>
         <button type="button" class="fmt-opt" data-fmt="lb"><b>🏆 Leaderboard</b><span>Any number of teams race — by total score or fantasy points. Great for groups.</span></button>
@@ -839,6 +858,14 @@
   <div class="sheet-h"><div class="t">Build your team</div><button class="btn ghost sm" id="capClose">Close</button></div>
   <div id="capHead"></div>
   <div id="capBody"></div>
+  <div style="height:16px"></div>
+</div>
+
+<div class="sheet-bg" id="salEditBg"></div>
+<div class="sheet" id="salEditSheet">
+  <div class="grip"></div>
+  <div class="sheet-h"><div class="t">Edit salaries</div><button class="btn ghost sm" id="salEditClose">Cancel</button></div>
+  <div id="salEditBody"></div>
   <div style="height:16px"></div>
 </div>
 
@@ -1582,13 +1609,9 @@ function openLeagueSheet(mode){
   $('#leagueCreateForm').style.display = mode==='join'? 'none':'';
   $('#leagueJoinForm').style.display = mode==='join'? '':'none';
   const err=$('#leagueSheetErr'); err.style.display='none'; err.textContent='';
-  if(mode!=='join'){   // default the pickers back to head-to-head / total score / open roster each open
+  if(mode!=='join'){   // default back to the Rivalry template each open
     window.lgFormat='h2h'; window.lgScoring='total'; window.lgRoster='open';
-    document.querySelectorAll('.fmt-opt[data-fmt]').forEach(x=>x.classList.toggle('sel', x.dataset.fmt==='h2h'));
-    document.querySelectorAll('.sco-opt').forEach(x=>x.classList.toggle('sel', x.dataset.sco==='total'));
-    document.querySelectorAll('.ros-opt').forEach(x=>x.classList.toggle('sel', x.dataset.ros==='open'));
-    $('#lgScoringField').style.display='none';
-    $('#lgRosterField').style.display='none';
+    applyTemplate('rivalry');
   }
   $('#leagueSheetBg').classList.add('show'); $('#leagueSheet').classList.add('show');
 }
@@ -1742,11 +1765,14 @@ const SALARY_PRESET={
   'Gary Woodland':7000
 };
 let SALARY_BY_NORM=null;
-function salaryFor(name){
+function baseSalaryFor(name){   // bundled preset price, ignoring any host overrides
   if(!SALARY_BY_NORM){ SALARY_BY_NORM={}; for(const k in SALARY_PRESET) SALARY_BY_NORM[norm(k)]=SALARY_PRESET[k]; }
+  return SALARY_BY_NORM[norm(name)] ?? FIELD_SALARY;
+}
+function salaryFor(name){
   const o=window.__lbMeta?.salaries;
   if(o) for(const k in o){ if(norm(k)===norm(name)) return Number(o[k])||FIELD_SALARY; }
-  return SALARY_BY_NORM[norm(name)] ?? FIELD_SALARY;
+  return baseSalaryFor(name);
 }
 function fmtSal(n){ return '$'+Number(n||0).toLocaleString('en-US'); }
 function isCap(){ return isLB() && window.__lbMeta?.roster==='cap'; }
@@ -1872,9 +1898,11 @@ function openLbRules(){
     body=`<div class="scoring-note">Each team's six golfers are scored against par and added together. <b>Lowest combined score wins</b>, just like real golf. Golfers still on the course update live.</div>
       <div class="scoring-note">Tap any team in the standings to see each golfer's score and status.</div>`;
   }
-  if(isCap()) body=`<div class="scoring-sec">Roster · Salary cap</div><div class="scoring-note">Draft ${lbRosterSize()} golfers under a ${fmtSal(lbCap())} budget. Stars cost more — every spot is a trade-off. Salaries are a bundled per-tournament preset.</div>`+body;
+  if(isCap()) body=`<div class="scoring-sec">Roster · Salary cap</div><div class="scoring-note">Draft ${lbRosterSize()} golfers under a ${fmtSal(lbCap())} budget. Stars cost more — every spot is a trade-off. ${Object.keys(window.__lbMeta?.salaries||{}).length?'The host has customized some prices.':'Salaries are a bundled per-tournament preset.'}</div>`+body;
+  if(isCap() && lbIsHost()) body+=`<div class="field"><button class="btn ghost" id="salEditBtn" type="button" style="width:100%">💰 Edit player salaries</button></div>`;
   $('#lbRulesBody').innerHTML=body;
   const eb=$('#scoEditBtn'); if(eb) eb.onclick=()=>{ closeLbRules(); openScoEdit(); };
+  const sb=$('#salEditBtn'); if(sb) sb.onclick=()=>{ closeLbRules(); openSalEdit(); };
   $('#lbRulesBg').classList.add('show'); $('#lbRulesSheet').classList.add('show');
 }
 function closeLbRules(){ $('#lbRulesBg').classList.remove('show'); $('#lbRulesSheet').classList.remove('show'); }
@@ -1914,6 +1942,58 @@ function openScoEdit(){
   $('#scoEditBg').classList.add('show'); $('#scoEditSheet').classList.add('show');
 }
 function closeScoEdit(){ $('#scoEditBg').classList.remove('show'); $('#scoEditSheet').classList.remove('show'); }
+
+/* Host salary editor — league prices for any golfer; only values that differ from the preset are stored. */
+let salEdits={}, salSearch='';
+function salFieldNames(){
+  const names = FIELD.length? FIELD.map(f=>f.name).filter(Boolean) : Object.keys(SALARY_PRESET);
+  const q=norm(salSearch);
+  return [...new Set(names)].filter(n=>!q||norm(n).includes(q)).sort((a,b)=> salaryFor(b)-salaryFor(a) || a.localeCompare(b));
+}
+function openSalEdit(){
+  if(!lbIsHost()){ toast('Only the league host can edit salaries'); return; }
+  salEdits={}; salSearch='';
+  const cur=window.__lbMeta?.salaries||{};
+  for(const k in cur) salEdits[k]=Number(cur[k])||FIELD_SALARY;
+  renderSalEdit();
+  $('#salEditBg').classList.add('show'); $('#salEditSheet').classList.add('show');
+}
+function closeSalEdit(){ $('#salEditBg').classList.remove('show'); $('#salEditSheet').classList.remove('show'); }
+function salValFor(name){ for(const k in salEdits){ if(norm(k)===norm(name)) return salEdits[k]; } return salaryFor(name); }
+function renderSalEdit(){
+  const rows=salFieldNames().map(n=>{
+    const val=salValFor(n), base=baseSalaryFor(n);
+    return `<div class="cap-row sal-row${val!==base?' edited':''}" data-sal="${esc(n)}">
+      <div class="cap-info"><b>${esc(n)}</b><span>preset ${fmtSal(base)}</span></div>
+      <input type="number" inputmode="numeric" class="sal-in" value="${val}" min="0" max="100000" step="250">
+    </div>`;
+  }).join('');
+  $('#salEditBody').innerHTML=`
+    <div class="scoring-note">Set your league’s price for any golfer — prices apply to everyone the moment you save. Edited golfers glow gold.</div>
+    <div class="field" style="margin-top:4px"><input type="text" id="salSearch" class="authinput" placeholder="Search golfers…" value="${esc(salSearch)}" style="text-align:left" autocomplete="off"></div>
+    <div class="cap-list">${rows||'<div class="home-empty">No golfers match that search.</div>'}</div>
+    <div class="field" style="margin-top:12px"><button class="btn" id="salSaveBtn" type="button" style="width:100%">Save salaries</button></div>
+    <div class="field"><button class="btn ghost sm" id="salResetBtn" type="button" style="width:100%">Reset all to preset</button></div>`;
+  const si=$('#salSearch');
+  si.oninput=()=>{ salSearch=si.value; const p=si.selectionStart; renderSalEdit(); const s2=$('#salSearch'); s2.focus(); s2.setSelectionRange(p,p); };
+  $('#salEditBody').querySelectorAll('.sal-row').forEach(row=>{
+    const inp=row.querySelector('.sal-in'), name=row.dataset.sal;
+    inp.oninput=()=>{ const v=Math.max(0,Math.min(100000,Math.round(Number(inp.value)||0))); salEdits[name]=v; row.classList.toggle('edited', v!==baseSalaryFor(name)); };
+  });
+  $('#salSaveBtn').onclick=async ()=>{
+    const out={};
+    for(const n in salEdits){ if(salEdits[n]!==baseSalaryFor(n)) out[n]=salEdits[n]; }
+    $('#salSaveBtn').disabled=true; $('#salSaveBtn').textContent='Saving…';
+    try{ await window.__league.saveSalaries(Object.keys(out).length?out:null); closeSalEdit(); toast('Salaries updated for the league 💰'); }
+    catch(e){ toast(e?.message||'Save failed'); }
+    finally{ const b=$('#salSaveBtn'); if(b){ b.disabled=false; b.textContent='Save salaries'; } }
+  };
+  $('#salResetBtn').onclick=async ()=>{
+    if(!confirm('Reset every golfer to the preset price?')) return;
+    try{ await window.__league.saveSalaries(null); closeSalEdit(); toast('Salaries reset to preset'); }
+    catch(e){ toast(e?.message||'Reset failed'); }
+  };
+}
 
 /* ---------------- Salary-cap lineup builder ---------------- */
 let capTab='players', capPick=[], capSearch='', capWarn='', capName='';
@@ -2626,6 +2706,8 @@ $('#scoEditClose').onclick=closeScoEdit;
 $('#scoEditBg').onclick=closeScoEdit;
 $('#capClose').onclick=closeCapBuilder;
 $('#capBg').onclick=closeCapBuilder;
+$('#salEditClose').onclick=closeSalEdit;
+$('#salEditBg').onclick=closeSalEdit;
 $('#lbSaveBtn').onclick=async ()=>{
   const nm=($('#lbTeamName').value||'').trim();
   const players=[...document.querySelectorAll('#lbPlayers [data-lbp]')].map(i=>i.value.trim()).filter(Boolean);
@@ -2637,6 +2719,36 @@ $('#lbSaveBtn').onclick=async ()=>{
   finally{ $('#lbSaveBtn').disabled=false; $('#lbSaveBtn').textContent='Save team'; }
 };
 window.lgFormat='h2h'; window.lgScoring='total'; window.lgRoster='open';
+/* Quick-start templates: one tap sets format + scoring + roster; Custom reveals the pickers. */
+const TEMPLATES={
+  rivalry:{ fmt:'h2h', sco:'total', ros:'open', hint:'Two teams of 6, head-to-head. Weekend lineups, win odds, the full rivalry experience. Lowest score wins.' },
+  quick:{ fmt:'lb', sco:'total', ros:'open', hint:'Any number of teams · 6 golfers each · scores to par combined · lowest total wins.' },
+  classic:{ fmt:'lb', sco:'points', ros:'open', hint:'Any number of teams · 6 golfers · placement points + cut bonuses · highest points wins.' },
+  showdown:{ fmt:'lb', sco:'points', ros:'cap', hint:'Draft 8 golfers under a $100,000 cap · placement points + cut bonuses · highest points wins.' },
+  custom:{ hint:'Pick the format, scoring, and roster rules yourself below.' }
+};
+window.lgTemplate='rivalry';
+function applyTemplate(key){
+  window.lgTemplate=key;
+  const t=TEMPLATES[key]||TEMPLATES.rivalry;
+  document.querySelectorAll('.tpl-opt').forEach(x=>x.classList.toggle('sel', x.dataset.tpl===key));
+  $('#tplHint').textContent=t.hint;
+  const custom=key==='custom';
+  $('#lgFormatField').style.display=custom?'':'none';
+  if(!custom){
+    window.lgFormat=t.fmt; window.lgScoring=t.sco; window.lgRoster=t.ros;
+    document.querySelectorAll('.fmt-opt[data-fmt]').forEach(x=>x.classList.toggle('sel', x.dataset.fmt===t.fmt));
+    document.querySelectorAll('.sco-opt').forEach(x=>x.classList.toggle('sel', x.dataset.sco===t.sco));
+    document.querySelectorAll('.ros-opt').forEach(x=>x.classList.toggle('sel', x.dataset.ros===t.ros));
+    $('#lgScoringField').style.display='none';
+    $('#lgRosterField').style.display='none';
+  } else {
+    const lb=window.lgFormat==='lb';
+    $('#lgScoringField').style.display=lb?'':'none';
+    $('#lgRosterField').style.display=lb?'':'none';
+  }
+}
+document.querySelectorAll('.tpl-opt').forEach(b=> b.onclick=()=>applyTemplate(b.dataset.tpl));
 document.querySelectorAll('.fmt-opt[data-fmt]').forEach(b=> b.onclick=()=>{
   window.lgFormat=b.dataset.fmt;
   document.querySelectorAll('.fmt-opt[data-fmt]').forEach(x=>x.classList.toggle('sel', x===b));
@@ -2718,7 +2830,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-n';
+const BUILD_ID='2026-07-18-o';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
@@ -2798,16 +2910,18 @@ async function startLeagueSync(){
       leagueRef=null;   // disables schedulePush — lb writes go through __league.saveMyLbTeam
       const lbRef=doc(fbDb,'leagues',LEAGUE_ID);
       if(unsubscribeLeague) unsubscribeLeague();
-      let prevCfgJson=null, cfgPrimed=false;
+      let prevCfgJson=null, prevSalJson=null, cfgPrimed=false;
       unsubscribeLeague = onSnapshot(lbRef,(ds)=>{
         if(!ds.exists()) return;
         const d=ds.data();
         window.__lbEntries=d.entries||{};
         window.__lbMeta=d.meta||{};
-        // let everyone know when the host changes the scoring rules (skip the initial load)
+        // let everyone know when the host changes the rules (skip the initial load)
         const cfgJson=JSON.stringify(d.meta?.pointsCfg||null);
+        const salJson=JSON.stringify(d.meta?.salaries||null);
         if(cfgPrimed && cfgJson!==prevCfgJson) window.toast?.('The host updated the scoring rules 📋');
-        prevCfgJson=cfgJson; cfgPrimed=true;
+        if(cfgPrimed && salJson!==prevSalJson) window.toast?.('The host updated player salaries 💰');
+        prevCfgJson=cfgJson; prevSalJson=salJson; cfgPrimed=true;
         document.dispatchEvent(new CustomEvent('mmt:lbUpdated'));
       },(e)=>console.error('LB listener error:',e));
       window.toast?.('Leaderboard league synced ☁️');
@@ -2999,6 +3113,10 @@ window.__league = {
     const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
     // null = reset to defaults (remove the override entirely)
     await setDoc(doc(fbDb,'leagues',LEAGUE_ID),{ meta:{ pointsCfg: cfg===null? deleteField() : cfg } },{merge:true});
+  },
+  async saveSalaries(map){
+    const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
+    await setDoc(doc(fbDb,'leagues',LEAGUE_ID),{ meta:{ salaries: map===null? deleteField() : map } },{merge:true});
   }
 };
 
