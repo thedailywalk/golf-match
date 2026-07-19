@@ -479,6 +479,8 @@
   .lbp-tags{padding:0 4px 7px 0;font-size:10.5px;color:var(--muted);margin-top:-3px;letter-spacing:.2px}
   .lbp-bonus{border-top:1px dashed var(--line);margin-top:5px;padding-top:8px}
   .lbp-bonus b{color:var(--text)}
+  .lbp.drop{opacity:.42}
+  .lbp.drop .sc{text-decoration:line-through}
   .lb-hbtns{display:flex;gap:6px}
   .scoring-tbl{width:100%;border-collapse:collapse;margin:0 0 6px}
   .scoring-tbl th,.scoring-tbl td{text-align:left;padding:7px 12px;font-size:13px;border-bottom:1px solid var(--line)}
@@ -805,7 +807,8 @@
         <button type="button" class="fmt-opt tpl-opt" data-tpl="quick"><b>🟢 Quick Match</b><span>Group · lowest score</span></button>
         <button type="button" class="fmt-opt tpl-opt" data-tpl="classic"><b>🎯 Points Classic</b><span>Group · fantasy points</span></button>
         <button type="button" class="fmt-opt tpl-opt" data-tpl="showdown"><b>💰 Salary Showdown</b><span>$100K cap · points</span></button>
-        <button type="button" class="fmt-opt tpl-opt" data-tpl="custom" style="grid-column:1/-1"><b>🛠️ Custom</b><span>Choose every rule yourself</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="bestball"><b>⛳ Best Ball</b><span>Best 4 of 6 count</span></button>
+        <button type="button" class="fmt-opt tpl-opt" data-tpl="custom"><b>🛠️ Custom</b><span>Choose every rule yourself</span></button>
       </div>
       <div class="np-hint" id="tplHint" style="margin:8px 0 0"></div>
     </div>
@@ -819,6 +822,7 @@
       <div class="fmt-pick">
         <button type="button" class="fmt-opt sco-opt sel" data-sco="total"><b>🟢 Total score</b><span>Golfers’ scores to par are combined. Lowest total wins — classic golf.</span></button>
         <button type="button" class="fmt-opt sco-opt" data-sco="points"><b>🎯 Fantasy points</b><span>Golfers earn points by finish + cut bonuses. Most points wins.</span></button>
+        <button type="button" class="fmt-opt sco-opt" data-sco="bestball"><b>⛳ Best ball</b><span>Only your best 4 scores count — the worst are dropped. Lowest total wins.</span></button>
       </div>
     </div>
     <div class="field" id="lgRosterField" style="display:none"><label>Roster</label>
@@ -1603,7 +1607,7 @@ function renderHome(){
     const m=metas[id]||{};
     const isLb=m.format==='lb';
     const teams = isLb
-      ? `🏆 ${m.teamCount||0} ${(m.teamCount===1?'team':'teams')} · ${m.scoring==='points'?'Points':'Total score'}${m.roster==='cap'?' · 💰 Cap':''}`
+      ? `🏆 ${m.teamCount||0} ${(m.teamCount===1?'team':'teams')} · ${m.scoring==='points'?'Points':m.scoring==='bestball'?'Best ball':'Total score'}${m.roster==='cap'?' · 💰 Cap':''}`
       : `<b>${esc(m.teamA||'Team A')}</b> vs <b>${esc(m.teamB||'Waiting for opponent')}</b>`;
     return `<div class="lgcard${id===ACTIVE_LEAGUE?' active':''}" data-lg="${esc(id)}">
       <div class="lg-top"><span class="lg-name">${esc(m.name||id)}</span>${id===ACTIVE_LEAGUE?'<span class="lg-live">Active</span>':''}</div>
@@ -1670,7 +1674,7 @@ function renderLobby(id, d){
   const isHost = meta.createdBy ? meta.createdBy===uid
     : (Object.keys(members).length ? Object.values(members).includes(uid) : true);  // legacy league: members manage it
   const lb = (meta.format||'h2h')==='lb';
-  const fmt = lb ? ('Leaderboard · '+(meta.scoring==='points'?'Points':'Total score')+(meta.roster==='cap'?' · Salary cap':'')) : ((meta.format||'h2h')==='h2h' ? 'Head-to-head' : meta.format);
+  const fmt = lb ? ('Leaderboard · '+(meta.scoring==='points'?'Points':meta.scoring==='bestball'?'Best ball':'Total score')+(meta.roster==='cap'?' · Salary cap':'')) : ((meta.format||'h2h')==='h2h' ? 'Head-to-head' : meta.format);
   let teamsHtml, teamsLabel='Teams', opponentPresent=false;
   if(lb){
     const entries=d.entries||{};
@@ -1739,7 +1743,9 @@ function renderLobby(id, d){
 /* ---------------- Leaderboard-format leagues: N teams race — lowest combined score OR most fantasy points ---------------- */
 let lbExpanded=new Set();
 function isLB(){ return window.LEAGUE_FORMAT==='lb'; }
-function isPoints(){ return isLB() && (window.__lbMeta?.scoring==='points'); }   // scoring axis: 'total' (default) | 'points'
+function isPoints(){ return isLB() && (window.__lbMeta?.scoring==='points'); }       // scoring axis: 'total' (default) | 'points' | 'bestball'
+function isBestBall(){ return isLB() && (window.__lbMeta?.scoring==='bestball'); }   // best N scores count, worst dropped
+function lbBestN(){ return Number(window.__lbMeta?.bestN)||4; }
 function lbMyEntry(){ const uid=window.currentUser?.uid; return (uid && (window.__lbEntries||{})[uid]) || null; }
 
 /* Points scoring — all derived live from ESPN's per-hole data we already parse.
@@ -1819,7 +1825,7 @@ function golferPoints(l, cfg){
   return { total:placement+perf+cut, placement, perf, cut, madeCut, missed, posN, birdies, eagles, albatross, bogeys, doubles, aces };
 }
 function lbTotals(){
-  const out=[], entries=window.__lbEntries||{}, points=isPoints(), cfg=points?effPointsCfg():null;
+  const out=[], entries=window.__lbEntries||{}, points=isPoints(), bb=isBestBall(), bestN=lbBestN(), cfg=points?effPointsCfg():null;
   for(const uid in entries){
     const e=entries[uid], players=e.players||[];
     let sum=0, counted=0, live=0, cutMakers=0; const perPlayer=[];
@@ -1831,14 +1837,22 @@ function lbTotals(){
         perPlayer.push({p,l,gp,pts:gp.total});
       } else {
         if(!l||l.toPar==null){ perPlayer.push({p,l,pts:null}); continue; }
-        sum+=l.toPar; counted++; if(l.live) live++;
+        if(l.live) live++;
         perPlayer.push({p,l,pts:l.toPar});
       }
+    }
+    if(!points){
+      // total: every score counts · best ball: only the best N count, the rest are dropped
+      const scored=perPlayer.filter(pp=>pp.pts!=null).sort((a,b)=>a.pts-b.pts);
+      const keep = bb ? scored.slice(0,bestN) : scored;
+      if(bb) scored.slice(bestN).forEach(pp=>{ pp.dropped=true; });
+      sum=keep.reduce((s,pp)=>s+pp.pts,0);
+      counted=keep.length;
     }
     const teamBonus = points ? cfg.cutBonus[Math.min(cutMakers, cfg.cutBonus.length-1)] : 0;
     out.push({uid, name:e.name||'Team', players, sum:sum+teamBonus, rawSum:sum, teamBonus, cutMakers, counted, live, perPlayer});
   }
-  // total: lowest wins · points: highest wins
+  // total & best ball: lowest wins · points: highest wins
   out.sort((a,b)=> (b.counted?1:0)-(a.counted?1:0) || (points? b.sum-a.sum : a.sum-b.sum) || a.name.localeCompare(b.name));
   return out;
 }
@@ -1860,7 +1874,7 @@ function renderLB(){
           return `<div class="lbp"><b>${esc(pp.p)}</b><i>${esc(status)}</i><span class="sc lbpts">${pp.pts!=null?pp.pts:'—'}</span></div>${tags?`<div class="lbp-tags">${esc(tags)}</div>`:''}`;
         }
         const l=pp.l;
-        return `<div class="lbp"><b>${esc(pp.p)}</b><i>${l?esc(onCourseLabel(l)):'—'}</i><span class="sc ${parClass(l?l.toPar:null)}">${parPretty(l?l.toPar:null)}</span></div>`;
+        return `<div class="lbp${pp.dropped?' drop':''}"><b>${esc(pp.p)}</b><i>${l?esc(onCourseLabel(l)):'—'}${pp.dropped?' · dropped':''}</i><span class="sc ${parClass(l?l.toPar:null)}">${parPretty(l?l.toPar:null)}</span></div>`;
       }).join('');
       const bonus = (points && r.teamBonus) ? `<div class="lbp lbp-bonus"><b>Cut bonus · ${r.cutMakers} made the cut</b><span class="sc lbpts">+${r.teamBonus}</span></div>` : '';
       const salLine = isCap() ? `<div class="lbp lbp-bonus"><b>Salary used</b><span class="sc">${fmtSal(r.players.reduce((s,p)=>s+salaryFor(p),0))} of ${fmtSal(lbCap())}</span></div>` : '';
@@ -1870,6 +1884,8 @@ function renderLB(){
     const gap = (points && leader && r.counted && r!==leader) ? (leader.sum - r.sum) : null;
     const sub = points
       ? `${r.counted}/${need} active${gap!=null?` · ${gap} back`:(r===leader&&r.counted?' · leading':'')}`
+      : isBestBall()
+      ? `best ${r.counted} of ${need} count${r.live?` · ${r.live} on course`:''}`
       : `${r.counted}/${need} scoring${r.live?` · ${r.live} on course`:''}`;
     const totCls = points ? 'lbpts' : parClass(r.counted?r.sum:null);
     const totTxt = r.counted ? (points ? `${r.sum}` : parPretty(r.sum)) : '—';
@@ -1897,8 +1913,8 @@ function openLbEdit(){
 }
 function closeLbEdit(){ $('#lbEditBg').classList.remove('show'); $('#lbEditSheet').classList.remove('show'); }
 function openLbRules(){
-  const pts=isPoints();
-  $('#lbRulesTitle').textContent = pts? 'Points scoring' : 'Total-score scoring';
+  const pts=isPoints(), bb=isBestBall();
+  $('#lbRulesTitle').textContent = pts? 'Points scoring' : bb? 'Best-ball scoring' : 'Total-score scoring';
   let body;
   if(pts){
     const cfg=effPointsCfg();
@@ -1916,6 +1932,9 @@ function openLbRules(){
       <table class="scoring-tbl"><thead><tr><th>Event</th><th>Points</th></tr></thead><tbody>${perfRows}</tbody></table>`:''}
       <div class="scoring-note">Tap any team in the standings to see exactly where its points came from. ${lbIsHost()?'You’re the host — you can customize every value.':'The league host can customize these values.'}</div>
       ${lbIsHost()?'<div class="field"><button class="btn ghost" id="scoEditBtn" type="button" style="width:100%">✏️ Edit scoring values</button></div>':''}`;
+  } else if(bb){
+    body=`<div class="scoring-note">Only each team's <b>best ${lbBestN()} golfer scores</b> (to par) count — the worst scores are dropped automatically as the round unfolds. <b>Lowest combined total wins.</b></div>
+      <div class="scoring-note">Tap any team in the standings to see which scores are counting and which are dropped (shown crossed out). Everything updates live as golfers play.</div>`;
   } else {
     body=`<div class="scoring-note">Each team's six golfers are scored against par and added together. <b>Lowest combined score wins</b>, just like real golf. Golfers still on the course update live.</div>
       <div class="scoring-note">Tap any team in the standings to see each golfer's score and status.</div>`;
@@ -2126,12 +2145,12 @@ function renderLbView(){
   $('#lbView').style.display = (MODE==='home'||chat)? 'none':'';
   $('#chatView').style.display = chat? '':'none';
   if(chat) renderChat(); else renderLB();
-  const pts = isPoints();
+  const pts = isPoints(), bb = isBestBall();
   // header: tournament + scoring format; keep the "Scoring" info button in sync
-  const eh=$('#lbEventName'); if(eh) eh.textContent = (EVENT.name ? (EVENT.name + (EVENT.status==='in'?' · Live':EVENT.status==='post'?' · Final':'')) : '') + (pts?' · Points':'');
+  const eh=$('#lbEventName'); if(eh) eh.textContent = (EVENT.name ? (EVENT.name + (EVENT.status==='in'?' · Live':EVENT.status==='post'?' · Final':'')) : '') + (pts?' · Points': bb?` · Best ${lbBestN()}`:'');
   const rb=$('#lbRulesBtn'); if(rb) rb.style.display = MODE==='home'? 'none':'';
   renderModeVisibility();
-  $('#foot').innerHTML = `Scores from ESPN’s public golf feed · ${pts?'most fantasy points wins':'lowest combined score wins'}.<br>Add to Home Screen for the full-screen app.`;
+  $('#foot').innerHTML = `Scores from ESPN’s public golf feed · ${pts?'most fantasy points wins': bb?`best ${lbBestN()} scores count · lowest total wins`:'lowest combined score wins'}.<br>Add to Home Screen for the full-screen app.`;
 }
 
 function renderWhoami(){
@@ -2747,6 +2766,7 @@ const TEMPLATES={
   quick:{ fmt:'lb', sco:'total', ros:'open', hint:'Any number of teams · 6 golfers each · scores to par combined · lowest total wins.' },
   classic:{ fmt:'lb', sco:'points', ros:'open', hint:'Any number of teams · 6 golfers · placement points + cut bonuses · highest points wins.' },
   showdown:{ fmt:'lb', sco:'points', ros:'cap', hint:'Draft 8 golfers under a $100,000 cap · placement points + cut bonuses · highest points wins.' },
+  bestball:{ fmt:'lb', sco:'bestball', ros:'open', hint:'Any number of teams · 6 golfers · only your best 4 scores count, worst 2 dropped · lowest total wins.' },
   custom:{ hint:'Pick the format, scoring, and roster rules yourself below.' }
 };
 window.lgTemplate='rivalry';
@@ -2852,7 +2872,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-q';
+const BUILD_ID='2026-07-18-r';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
@@ -3081,10 +3101,11 @@ window.__league = {
     const defaults=structuredClone(window.__defaultTeams||{A:{name:'Team A',players:[]},B:{name:'Team B',players:[]}});
     if(format==='lb'){
       const cap = roster==='cap';
+      const sco = ['points','bestball'].includes(scoring)? scoring : 'total';
       await setDoc(doc(fbDb,'leagues',id),{
         // cap leagues start with an empty roster — you draft under the budget in the builder
         entries:{ [uid]:{ name:teamName, players:(cap?[]:defaults.A.players), owner:uid } },
-        meta:{ name, code, format:'lb', scoring:(scoring==='points'?'points':'total'),
+        meta:{ name, code, format:'lb', scoring:sco, ...(sco==='bestball'?{bestN:4}:{}),
                roster:(cap?'cap':'open'), ...(cap?{cap:100000, rosterSize:8}:{}),
                createdBy:uid, createdAt:serverTimestamp() },
         createdAt:serverTimestamp(), updatedAt:serverTimestamp()
