@@ -465,6 +465,39 @@
   .scoring-tbl td:last-child,.scoring-tbl th:last-child{text-align:right;font-weight:800;color:var(--gold)}
   .scoring-note{font-size:12px;color:var(--muted);margin:2px 16px 10px;line-height:1.5}
   .scoring-sec{font-weight:800;font-size:13px;margin:12px 16px 6px}
+  .sco-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 16px}
+  .sco-cell label{display:block;font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sco-cell input{width:100%;box-sizing:border-box;padding:8px 6px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--text);font-weight:800;font-size:14px;text-align:center}
+  .sco-cell input:focus{outline:none;border-color:var(--gold)}
+  /* salary-cap builder */
+  .cap-tabs{display:flex;gap:6px;margin:6px 16px 10px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .cap-tabs button{flex:1;border:0;background:transparent;color:var(--muted);font-weight:800;font-size:13px;padding:8px 4px;border-radius:9px;cursor:pointer}
+  .cap-tabs button.on{background:var(--ink,#0b2e4f);color:#fff}
+  .cap-stats{display:flex;gap:8px;margin:0 16px 8px}
+  .cap-stats>div{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:7px 10px}
+  .cap-stats label{display:block;font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);font-weight:800}
+  .cap-stats b{font-size:14.5px}
+  .cap-stats b.over{color:#c43c3c}
+  .cap-bar{height:7px;border-radius:5px;background:var(--line);margin:0 16px 7px;overflow:hidden}
+  .cap-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#3e8e5a,var(--gold));transition:width .25s ease}
+  .cap-bar i.over{background:#c43c3c}
+  .cap-status{margin:0 16px 4px;font-size:12px;font-weight:800;color:var(--muted)}
+  .cap-status.good{color:#3e8e5a}
+  .cap-status.warn{color:var(--gold)}
+  .cap-status.bad{color:#c43c3c}
+  .cap-warn{margin:6px 16px 2px;font-size:12px;font-weight:700;color:#c43c3c;background:rgba(196,60,60,.09);border:1px solid rgba(196,60,60,.3);border-radius:10px;padding:8px 11px;line-height:1.45}
+  .cap-list{margin:4px 16px 0;max-height:44vh;overflow-y:auto;border:1px solid var(--line);border-radius:13px;background:var(--paper)}
+  .cap-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .cap-row:last-child{border-bottom:0}
+  .cap-row.in{background:rgba(244,183,64,.10)}
+  .cap-info{flex:1;min-width:0}
+  .cap-info b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cap-info span{display:block;font-size:10.5px;color:var(--muted)}
+  .cap-sal{font-weight:900;font-size:13px}
+  .cap-btn{flex:none;width:26px;height:26px;border-radius:9px;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:900;font-size:14px;color:var(--muted)}
+  .cap-row.in .cap-btn{background:var(--gold);border-color:var(--gold);color:#3a2a00}
+  .cap-btn.rm{color:#c43c3c;border-color:rgba(196,60,60,.4)}
+  @media (prefers-color-scheme:dark){ .cap-tabs button.on{background:var(--gold);color:#3a2a00} .cap-status.good{color:#6fcf97} }
 
   /* Lobby */
   .lob-meta{display:flex;align-items:center;gap:10px;margin:14px 16px 2px;flex-wrap:wrap}
@@ -747,6 +780,12 @@
         <button type="button" class="fmt-opt sco-opt" data-sco="points"><b>🎯 Fantasy points</b><span>Golfers earn points by finish + cut bonuses. Most points wins.</span></button>
       </div>
     </div>
+    <div class="field" id="lgRosterField" style="display:none"><label>Roster</label>
+      <div class="fmt-pick">
+        <button type="button" class="fmt-opt ros-opt sel" data-ros="open"><b>📝 Open roster</b><span>Pick any 6 golfers in the field. Simple and fast.</span></button>
+        <button type="button" class="fmt-opt ros-opt" data-ros="cap"><b>💰 Salary cap</b><span>8 golfers under a $100,000 budget. Stars cost — value picks win leagues.</span></button>
+      </div>
+    </div>
     <div class="np-hint" style="margin:0 16px 12px">You’ll get an invite code to send your friends.</div>
     <div class="field"><button class="btn" id="lgCreateGo" type="button" style="width:100%">Create league</button></div>
   </div>
@@ -783,6 +822,23 @@
   <div class="grip"></div>
   <div class="sheet-h"><div class="t" id="lbRulesTitle">Scoring</div><button class="btn ghost sm" id="lbRulesClose">Close</button></div>
   <div id="lbRulesBody"></div>
+  <div style="height:16px"></div>
+</div>
+
+<div class="sheet-bg" id="scoEditBg"></div>
+<div class="sheet" id="scoEditSheet">
+  <div class="grip"></div>
+  <div class="sheet-h"><div class="t">Edit scoring</div><button class="btn ghost sm" id="scoEditClose">Cancel</button></div>
+  <div id="scoEditBody"></div>
+  <div style="height:16px"></div>
+</div>
+
+<div class="sheet-bg" id="capBg"></div>
+<div class="sheet" id="capSheet">
+  <div class="grip"></div>
+  <div class="sheet-h"><div class="t">Build your team</div><button class="btn ghost sm" id="capClose">Close</button></div>
+  <div id="capHead"></div>
+  <div id="capBody"></div>
   <div style="height:16px"></div>
 </div>
 
@@ -1498,7 +1554,7 @@ function renderHome(){
     const m=metas[id]||{};
     const isLb=m.format==='lb';
     const teams = isLb
-      ? `🏆 ${m.teamCount||0} ${(m.teamCount===1?'team':'teams')} · ${m.scoring==='points'?'Points':'Total score'}`
+      ? `🏆 ${m.teamCount||0} ${(m.teamCount===1?'team':'teams')} · ${m.scoring==='points'?'Points':'Total score'}${m.roster==='cap'?' · 💰 Cap':''}`
       : `<b>${esc(m.teamA||'Team A')}</b> vs <b>${esc(m.teamB||'Waiting for opponent')}</b>`;
     return `<div class="lgcard${id===ACTIVE_LEAGUE?' active':''}" data-lg="${esc(id)}">
       <div class="lg-top"><span class="lg-name">${esc(m.name||id)}</span>${id===ACTIVE_LEAGUE?'<span class="lg-live">Active</span>':''}</div>
@@ -1526,11 +1582,13 @@ function openLeagueSheet(mode){
   $('#leagueCreateForm').style.display = mode==='join'? 'none':'';
   $('#leagueJoinForm').style.display = mode==='join'? '':'none';
   const err=$('#leagueSheetErr'); err.style.display='none'; err.textContent='';
-  if(mode!=='join'){   // default the pickers back to head-to-head / total score each open
-    window.lgFormat='h2h'; window.lgScoring='total';
+  if(mode!=='join'){   // default the pickers back to head-to-head / total score / open roster each open
+    window.lgFormat='h2h'; window.lgScoring='total'; window.lgRoster='open';
     document.querySelectorAll('.fmt-opt[data-fmt]').forEach(x=>x.classList.toggle('sel', x.dataset.fmt==='h2h'));
     document.querySelectorAll('.sco-opt').forEach(x=>x.classList.toggle('sel', x.dataset.sco==='total'));
+    document.querySelectorAll('.ros-opt').forEach(x=>x.classList.toggle('sel', x.dataset.ros==='open'));
     $('#lgScoringField').style.display='none';
+    $('#lgRosterField').style.display='none';
   }
   $('#leagueSheetBg').classList.add('show'); $('#leagueSheet').classList.add('show');
 }
@@ -1567,15 +1625,16 @@ function renderLobby(id, d){
   const isHost = meta.createdBy ? meta.createdBy===uid
     : (Object.keys(members).length ? Object.values(members).includes(uid) : true);  // legacy league: members manage it
   const lb = (meta.format||'h2h')==='lb';
-  const fmt = lb ? ('Leaderboard · '+(meta.scoring==='points'?'Points':'Total score')) : ((meta.format||'h2h')==='h2h' ? 'Head-to-head' : meta.format);
+  const fmt = lb ? ('Leaderboard · '+(meta.scoring==='points'?'Points':'Total score')+(meta.roster==='cap'?' · Salary cap':'')) : ((meta.format||'h2h')==='h2h' ? 'Head-to-head' : meta.format);
   let teamsHtml, teamsLabel='Teams', opponentPresent=false;
   if(lb){
     const entries=d.entries||{};
     const list=Object.keys(entries).map(k=>({uid:k, ...entries[k]})).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
     teamsLabel=`Teams · ${list.length}`;
+    const need=Number(meta.rosterSize)||6;
     teamsHtml = list.length ? list.map(e=>{
-      const count=(e.players||[]).filter(p=>p&&String(p).trim()).length, ready=count>=6, cls=ready?'ready':'warn';
-      return `<div class="lob-row"><span class="lob-dot ${cls}"></span><div class="lob-t"><b>${esc(e.name||'Team')}${e.uid===uid?' · You':''}</b><span>${ready?'Roster set · 6 golfers':count+'/6 golfers'}</span></div><span class="lob-pill ${cls}">${ready?'Ready':count+'/6'}</span></div>`;
+      const count=(e.players||[]).filter(p=>p&&String(p).trim()).length, ready=count>=need, cls=ready?'ready':'warn';
+      return `<div class="lob-row"><span class="lob-dot ${cls}"></span><div class="lob-t"><b>${esc(e.name||'Team')}${e.uid===uid?' · You':''}</b><span>${ready?`Roster set · ${need} golfers`:count+'/'+need+' golfers'}</span></div><span class="lob-pill ${cls}">${ready?'Ready':count+'/'+need}</span></div>`;
     }).join('') : '<div class="home-empty">No teams yet — share the code below.</div>';
   } else {
     const A=lobbyTeamStatus(d,'A'), B=lobbyTeamStatus(d,'B');
@@ -1647,10 +1706,56 @@ const POINTS_CFG = {
   madeCut: 0,                            // per-golfer made-cut points (team bonus already rewards the cut)
   birdie:0, eagle:0, albatross:0, bogey:0, double:0, ace:0   // performance bonuses — off in the default preset
 };
+// The host can override any value (stored on the league as meta.pointsCfg); everyone scores with the merge.
+function effPointsCfg(){
+  const o=window.__lbMeta?.pointsCfg;
+  if(!o) return POINTS_CFG;
+  const c=structuredClone(POINTS_CFG);
+  c.placement=POINTS_CFG.placement.map(r=>[r[0],r[1]]);   // structuredClone drops Infinity → rebuild tiers
+  if(Array.isArray(o.placement)) c.placement.forEach((row,i)=>{ if(o.placement[i]!=null) row[1]=Number(o.placement[i])||0; });
+  if(Array.isArray(o.cutBonus)) c.cutBonus=c.cutBonus.map((v,i)=> o.cutBonus[i]!=null? (Number(o.cutBonus[i])||0) : v);
+  for(const k of ['madeCut','birdie','eagle','albatross','bogey','double','ace']) if(o[k]!=null) c[k]=Number(o[k])||0;
+  return c;
+}
+function lbIsHost(){ return !!window.__lbMeta?.createdBy && window.__lbMeta.createdBy===window.currentUser?.uid; }
+
+/* ---------------- Salary-cap rosters ----------------
+   Bundled salary preset (curated per major from public rankings/odds — not live data).
+   Any golfer not listed prices at the field rate. League doc can override via meta.salaries. */
+const FIELD_SALARY=6000;
+const SALARY_PRESET={
+  'Scottie Scheffler':20000,'Rory McIlroy':18500,'Xander Schauffele':17500,'Ludvig Åberg':17000,
+  'Collin Morikawa':16500,'Jon Rahm':16500,'Bryson DeChambeau':16000,'Justin Thomas':15000,
+  'Tommy Fleetwood':14500,'Viktor Hovland':14500,'Patrick Cantlay':14000,'Hideki Matsuyama':14000,
+  'Joaquin Niemann':13500,'Shane Lowry':13500,'Tyrrell Hatton':13500,'Wyndham Clark':13000,
+  'Sam Burns':13000,'Russell Henley':13000,'Brooks Koepka':12500,'Matt Fitzpatrick':12500,
+  'Jordan Spieth':12000,'Cameron Smith':12000,'Sahith Theegala':11500,'Max Homa':11000,
+  'Keegan Bradley':10500,'Tony Finau':10500,'Sungjae Im':10500,'Robert MacIntyre':10500,
+  'Corey Conners':10000,'Justin Rose':10000,'Jason Day':10000,'Akshay Bhatia':10000,'Sepp Straka':10000,
+  'Adam Scott':9500,'Will Zalatoris':9500,'Cameron Young':9500,'Dustin Johnson':9500,'Tom Kim':9500,
+  'Min Woo Lee':9500,'Maverick McNealy':9500,'Ben Griffin':9500,'Byeong Hun An':9000,'Aaron Rai':9000,
+  'Harris English':9000,'Si Woo Kim':9000,'Denny McCarthy':8500,'Thomas Detry':8500,'J.T. Poston':8500,
+  'Ryan Fox':8500,'Patrick Reed':8500,'Davis Thompson':8500,'Chris Gotterup':8500,'Billy Horschel':8500,
+  'Daniel Berger':8500,'Rasmus Højgaard':8500,'Nicolai Højgaard':8500,'Rickie Fowler':8000,
+  'Lucas Glover':8000,'Nick Taylor':8000,'Kurt Kitayama':8000,'Matthieu Pavon':8000,'Stephan Jaeger':8000,
+  'Sam Stevens':8000,'Ryan Gerard':8000,'Chris Kirk':8000,'Nico Echavarria':7500,'Phil Mickelson':7000,
+  'Gary Woodland':7000
+};
+let SALARY_BY_NORM=null;
+function salaryFor(name){
+  if(!SALARY_BY_NORM){ SALARY_BY_NORM={}; for(const k in SALARY_PRESET) SALARY_BY_NORM[norm(k)]=SALARY_PRESET[k]; }
+  const o=window.__lbMeta?.salaries;
+  if(o) for(const k in o){ if(norm(k)===norm(name)) return Number(o[k])||FIELD_SALARY; }
+  return SALARY_BY_NORM[norm(name)] ?? FIELD_SALARY;
+}
+function fmtSal(n){ return '$'+Number(n||0).toLocaleString('en-US'); }
+function isCap(){ return isLB() && window.__lbMeta?.roster==='cap'; }
+function lbCap(){ return Number(window.__lbMeta?.cap)||100000; }
+function lbRosterSize(){ return Number(window.__lbMeta?.rosterSize)||(isCap()?8:6); }
 function parsePos(pos){ if(pos==null||pos==='') return null; const n=Number(String(pos).replace(/^T/i,'')); return Number.isNaN(n)?null:n; }
 function placementPts(posN, cfg){ if(posN==null) return 0; for(const [maxRank,pts] of cfg.placement){ if(posN<=maxRank) return pts; } return 0; }
 function golferPoints(l, cfg){
-  cfg=cfg||POINTS_CFG;
+  cfg=cfg||effPointsCfg();
   let birdies=0,eagles=0,albatross=0,bogeys=0,doubles=0,aces=0;
   for(const r of (l.perHole||[])) for(const h of (r.holes||[])){
     const rel=h.relN;
@@ -1666,7 +1771,7 @@ function golferPoints(l, cfg){
   return { total:placement+perf+cut, placement, perf, cut, madeCut, missed, posN, birdies, eagles, albatross, bogeys, doubles, aces };
 }
 function lbTotals(){
-  const out=[], entries=window.__lbEntries||{}, points=isPoints();
+  const out=[], entries=window.__lbEntries||{}, points=isPoints(), cfg=points?effPointsCfg():null;
   for(const uid in entries){
     const e=entries[uid], players=e.players||[];
     let sum=0, counted=0, live=0, cutMakers=0; const perPlayer=[];
@@ -1674,7 +1779,7 @@ function lbTotals(){
       const l=LIVE[norm(p)];
       if(points){
         if(!l || EVENT.status==='pre'){ perPlayer.push({p,l,pts:null}); continue; }
-        const gp=golferPoints(l); sum+=gp.total; counted++; if(l.live) live++; if(gp.madeCut) cutMakers++;
+        const gp=golferPoints(l,cfg); sum+=gp.total; counted++; if(l.live) live++; if(gp.madeCut) cutMakers++;
         perPlayer.push({p,l,gp,pts:gp.total});
       } else {
         if(!l||l.toPar==null){ perPlayer.push({p,l,pts:null}); continue; }
@@ -1682,7 +1787,7 @@ function lbTotals(){
         perPlayer.push({p,l,pts:l.toPar});
       }
     }
-    const teamBonus = points ? POINTS_CFG.cutBonus[Math.min(cutMakers, POINTS_CFG.cutBonus.length-1)] : 0;
+    const teamBonus = points ? cfg.cutBonus[Math.min(cutMakers, cfg.cutBonus.length-1)] : 0;
     out.push({uid, name:e.name||'Team', players, sum:sum+teamBonus, rawSum:sum, teamBonus, cutMakers, counted, live, perPlayer});
   }
   // total: lowest wins · points: highest wins
@@ -1703,19 +1808,21 @@ function renderLB(){
         if(points){
           const gp=pp.gp;
           const status = pp.l ? (gp&&gp.missed?'Missed cut':onCourseLabel(pp.l)) : '—';
-          const tags = gp ? [gp.placement?`${gp.placement} place`:'', gp.cut?`+${gp.cut} made cut`:'', gp.birdies?`${gp.birdies} 🐦`:'', gp.eagles?`${gp.eagles} 🦅`:'', gp.albatross?`${gp.albatross} 💎`:'', gp.aces?`${gp.aces} ⛳️ ace`:''].filter(Boolean).join('  ·  ') : '';
+          const tags = gp ? [gp.placement?`${gp.placement} place`:'', gp.cut?`+${gp.cut} made cut`:'', gp.perf?`${gp.perf>0?'+':''}${gp.perf} bonus pts`:'', gp.birdies?`${gp.birdies} 🐦`:'', gp.eagles?`${gp.eagles} 🦅`:'', gp.albatross?`${gp.albatross} 💎`:'', gp.aces?`${gp.aces} ⛳️ ace`:''].filter(Boolean).join('  ·  ') : '';
           return `<div class="lbp"><b>${esc(pp.p)}</b><i>${esc(status)}</i><span class="sc lbpts">${pp.pts!=null?pp.pts:'—'}</span></div>${tags?`<div class="lbp-tags">${esc(tags)}</div>`:''}`;
         }
         const l=pp.l;
         return `<div class="lbp"><b>${esc(pp.p)}</b><i>${l?esc(onCourseLabel(l)):'—'}</i><span class="sc ${parClass(l?l.toPar:null)}">${parPretty(l?l.toPar:null)}</span></div>`;
       }).join('');
       const bonus = (points && r.teamBonus) ? `<div class="lbp lbp-bonus"><b>Cut bonus · ${r.cutMakers} made the cut</b><span class="sc lbpts">+${r.teamBonus}</span></div>` : '';
-      detail=`<div class="lbdetail">${prows}${bonus}</div>`;
+      const salLine = isCap() ? `<div class="lbp lbp-bonus"><b>Salary used</b><span class="sc">${fmtSal(r.players.reduce((s,p)=>s+salaryFor(p),0))} of ${fmtSal(lbCap())}</span></div>` : '';
+      detail=`<div class="lbdetail">${prows}${bonus}${salLine}</div>`;
     }
+    const need=lbRosterSize();
     const gap = (points && leader && r.counted && r!==leader) ? (leader.sum - r.sum) : null;
     const sub = points
-      ? `${r.counted}/${r.players.length||6} active${gap!=null?` · ${gap} back`:(r===leader&&r.counted?' · leading':'')}`
-      : `${r.counted}/${r.players.length||6} scoring${r.live?` · ${r.live} on course`:''}`;
+      ? `${r.counted}/${need} active${gap!=null?` · ${gap} back`:(r===leader&&r.counted?' · leading':'')}`
+      : `${r.counted}/${need} scoring${r.live?` · ${r.live} on course`:''}`;
     const totCls = points ? 'lbpts' : parClass(r.counted?r.sum:null);
     const totTxt = r.counted ? (points ? `${r.sum}` : parPretty(r.sum)) : '—';
     const totUnit = (points && r.counted) ? '<span class="lbunit">pts</span>' : '';
@@ -1733,6 +1840,7 @@ document.addEventListener('mmt:lbUpdated', ()=>{
   render();
 });
 function openLbEdit(){
+  if(isCap()){ openCapBuilder(); return; }   // salary leagues use the cap builder, not the free-type editor
   const e=lbMyEntry(); if(!e){ toast('Join this league first'); return; }
   $('#lbTeamName').value=e.name||'';
   $('#lbPlayers').innerHTML=(e.players&&e.players.length?e.players:['','','','','','']).slice(0,6)
@@ -1745,24 +1853,164 @@ function openLbRules(){
   $('#lbRulesTitle').textContent = pts? 'Points scoring' : 'Total-score scoring';
   let body;
   if(pts){
-    const cfg=POINTS_CFG;
+    const cfg=effPointsCfg();
     const labels=['1st','2nd','3rd','4th–5th','6th–10th','11th–15th','16th–20th','21st–30th','31st–40th','41st–50th','51st +'];
     const placeRows=cfg.placement.map((row,i)=>`<tr><td>${labels[i]||'—'}</td><td>${row[1]}</td></tr>`).join('');
     const cutRows=[[4,cfg.cutBonus[4]],[5,cfg.cutBonus[5]],[6,cfg.cutBonus[6]]].map(([n,b])=>`<tr><td>${n} golfers make the cut</td><td>+${b}</td></tr>`).join('');
+    const PERF_LABELS={ birdie:'Birdie 🐦', eagle:'Eagle 🦅', albatross:'Albatross 💎', ace:'Hole-in-one ⛳️', bogey:'Bogey', double:'Double bogey +', madeCut:'Made the cut' };
+    const perfRows=Object.keys(PERF_LABELS).filter(k=>cfg[k]).map(k=>`<tr><td>${PERF_LABELS[k]}</td><td>${cfg[k]>0?'+':''}${cfg[k]}</td></tr>`).join('');
     body=`<div class="scoring-note">Every golfer earns points for their live finishing position. Most total points wins. Miss the cut and that golfer scores 0.</div>
       <div class="scoring-sec">Placement points</div>
       <table class="scoring-tbl"><thead><tr><th>Finish</th><th>Points</th></tr></thead><tbody>${placeRows}<tr><td>Missed cut</td><td>0</td></tr></tbody></table>
       <div class="scoring-sec">Team cut bonus</div>
       <table class="scoring-tbl"><thead><tr><th>Your golfers</th><th>Bonus</th></tr></thead><tbody>${cutRows}</tbody></table>
-      <div class="scoring-note">Tap any team in the standings to see exactly where its points came from. Per-golfer bonuses for birdies, eagles &amp; more can be switched on in a future update.</div>`;
+      ${perfRows?`<div class="scoring-sec">Per-golfer bonuses</div>
+      <table class="scoring-tbl"><thead><tr><th>Event</th><th>Points</th></tr></thead><tbody>${perfRows}</tbody></table>`:''}
+      <div class="scoring-note">Tap any team in the standings to see exactly where its points came from. ${lbIsHost()?'You’re the host — you can customize every value.':'The league host can customize these values.'}</div>
+      ${lbIsHost()?'<div class="field"><button class="btn ghost" id="scoEditBtn" type="button" style="width:100%">✏️ Edit scoring values</button></div>':''}`;
   } else {
     body=`<div class="scoring-note">Each team's six golfers are scored against par and added together. <b>Lowest combined score wins</b>, just like real golf. Golfers still on the course update live.</div>
       <div class="scoring-note">Tap any team in the standings to see each golfer's score and status.</div>`;
   }
+  if(isCap()) body=`<div class="scoring-sec">Roster · Salary cap</div><div class="scoring-note">Draft ${lbRosterSize()} golfers under a ${fmtSal(lbCap())} budget. Stars cost more — every spot is a trade-off. Salaries are a bundled per-tournament preset.</div>`+body;
   $('#lbRulesBody').innerHTML=body;
+  const eb=$('#scoEditBtn'); if(eb) eb.onclick=()=>{ closeLbRules(); openScoEdit(); };
   $('#lbRulesBg').classList.add('show'); $('#lbRulesSheet').classList.add('show');
 }
 function closeLbRules(){ $('#lbRulesBg').classList.remove('show'); $('#lbRulesSheet').classList.remove('show'); }
+
+/* Host scoring editor — every number is editable; blank = 0. Saves to meta.pointsCfg for the whole league. */
+function openScoEdit(){
+  if(!lbIsHost()){ toast('Only the league host can edit scoring'); return; }
+  const cfg=effPointsCfg();
+  const labels=['1st','2nd','3rd','4th–5th','6th–10th','11th–15th','16th–20th','21st–30th','31st–40th','41st–50th','51st +'];
+  const place=cfg.placement.map((row,i)=>`<div class="sco-cell"><label>${labels[i]}</label><input type="number" inputmode="numeric" data-plc="${i}" value="${row[1]}"></div>`).join('');
+  const cuts=[4,5,6].map(n=>`<div class="sco-cell"><label>${n} make cut</label><input type="number" inputmode="numeric" data-cut="${n}" value="${cfg.cutBonus[n]}"></div>`).join('');
+  const PERF=[['birdie','Birdie 🐦'],['eagle','Eagle 🦅'],['albatross','Albatross 💎'],['ace','Hole-in-one ⛳️'],['bogey','Bogey'],['double','Double+'],['madeCut','Made cut']];
+  const perf=PERF.map(([k,lbl])=>`<div class="sco-cell"><label>${lbl}</label><input type="number" inputmode="numeric" data-perf="${k}" value="${cfg[k]}"></div>`).join('');
+  $('#scoEditBody').innerHTML=`
+    <div class="scoring-note">Changes apply to the whole league instantly — everyone's totals re-score live. Use negative numbers for penalties (bogeys, doubles).</div>
+    <div class="scoring-sec">Placement points</div><div class="sco-grid">${place}</div>
+    <div class="scoring-sec">Team cut bonus</div><div class="sco-grid">${cuts}</div>
+    <div class="scoring-sec">Per-golfer bonuses &amp; penalties</div><div class="sco-grid">${perf}</div>
+    <div class="field" style="margin-top:12px"><button class="btn" id="scoSaveBtn" type="button" style="width:100%">Save scoring</button></div>
+    <div class="field"><button class="btn ghost sm" id="scoResetBtn" type="button" style="width:100%">Reset to defaults</button></div>`;
+  $('#scoSaveBtn').onclick=async ()=>{
+    const num=(el)=>{ const v=Number(el.value); return Number.isNaN(v)?0:Math.max(-500,Math.min(500,Math.round(v))); };
+    const out={ placement:[], cutBonus:effPointsCfg().cutBonus.slice() };
+    document.querySelectorAll('#scoEditBody [data-plc]').forEach(el=> out.placement[Number(el.dataset.plc)]=num(el));
+    document.querySelectorAll('#scoEditBody [data-cut]').forEach(el=> out.cutBonus[Number(el.dataset.cut)]=num(el));
+    document.querySelectorAll('#scoEditBody [data-perf]').forEach(el=> out[el.dataset.perf]=num(el));
+    $('#scoSaveBtn').disabled=true; $('#scoSaveBtn').textContent='Saving…';
+    try{ await window.__league.savePointsCfg(out); closeScoEdit(); toast('Scoring updated for the league ✓'); }
+    catch(e){ toast(e?.message||'Save failed'); }
+    finally{ $('#scoSaveBtn').disabled=false; $('#scoSaveBtn').textContent='Save scoring'; }
+  };
+  $('#scoResetBtn').onclick=async ()=>{
+    if(!confirm('Reset all scoring values to the defaults?')) return;
+    try{ await window.__league.savePointsCfg(null); closeScoEdit(); toast('Scoring reset to defaults'); }
+    catch(e){ toast(e?.message||'Reset failed'); }
+  };
+  $('#scoEditBg').classList.add('show'); $('#scoEditSheet').classList.add('show');
+}
+function closeScoEdit(){ $('#scoEditBg').classList.remove('show'); $('#scoEditSheet').classList.remove('show'); }
+
+/* ---------------- Salary-cap lineup builder ---------------- */
+let capTab='players', capPick=[], capSearch='', capWarn='', capName='';
+function openCapBuilder(){
+  const e=lbMyEntry(); if(!e){ toast('Join this league first'); return; }
+  capPick=(e.players||[]).filter(Boolean).slice(0, lbRosterSize());
+  capName=e.name||'';
+  capTab = capPick.length? 'team':'players';
+  capSearch=''; capWarn='';
+  renderCapBuilder();   // the team tab pre-fills the name itself when it renders
+  $('#capBg').classList.add('show'); $('#capSheet').classList.add('show');
+}
+function closeCapBuilder(){ $('#capBg').classList.remove('show'); $('#capSheet').classList.remove('show'); }
+function capUsed(){ return capPick.reduce((s,p)=>s+salaryFor(p),0); }
+function capStatus(){
+  const need=lbRosterSize(), used=capUsed(), cap=lbCap();
+  if(used>cap) return {txt:`Over cap by ${fmtSal(used-cap)}`, cls:'bad', ok:false};
+  if(!capPick.length) return {txt:'Choose your golfers', cls:'', ok:true};
+  if(capPick.length<need) return {txt:`Draft incomplete · ${capPick.length}/${need}`, cls:'warn', ok:true};
+  return {txt:'Draft complete ✓', cls:'good', ok:true};
+}
+function capFieldList(){
+  // live tournament field once the event loads; bundled price list before that
+  const names = FIELD.length ? FIELD.map(f=>f.name).filter(Boolean) : Object.keys(SALARY_PRESET);
+  const q=norm(capSearch);
+  return [...new Set(names)]
+    .filter(n=> !q || norm(n).includes(q))
+    .map(n=>({ name:n, sal:salaryFor(n), l:LIVE[norm(n)] }))
+    .sort((a,b)=> b.sal-a.sal || a.name.localeCompare(b.name));
+}
+function capToggle(name){
+  const i=capPick.findIndex(p=>norm(p)===norm(name));
+  if(i>=0){ capPick.splice(i,1); capWarn=''; renderCapBuilder(); return; }
+  const need=lbRosterSize(), cap=lbCap();
+  if(capPick.length>=need){ capWarn=`Your roster is full (${need} golfers). Remove someone first.`; renderCapBuilder(); return; }
+  const over=capUsed()+salaryFor(name)-cap;
+  if(over>0){ capWarn=`${name} puts you ${fmtSal(over)} over the salary cap. Remove a pricier golfer or pick a value option.`; renderCapBuilder(); return; }
+  capPick.push(name); capWarn='';
+  renderCapBuilder();
+}
+function renderCapBuilder(){
+  const need=lbRosterSize(), used=capUsed(), cap=lbCap(), st=capStatus();
+  const pct=Math.min(100, Math.round(used/cap*100));
+  $('#capHead').innerHTML=`
+    <div class="cap-tabs">
+      <button class="${capTab==='players'?'on':''}" data-ctab="players" type="button">Players</button>
+      <button class="${capTab==='team'?'on':''}" data-ctab="team" type="button">My Team · ${capPick.length}/${need}</button>
+    </div>
+    <div class="cap-stats">
+      <div><label>Used</label><b>${fmtSal(used)}</b></div>
+      <div><label>Remaining</label><b class="${used>cap?'over':''}">${fmtSal(cap-used)}</b></div>
+      <div><label>Spots</label><b>${capPick.length}/${need}</b></div>
+    </div>
+    <div class="cap-bar"><i style="width:${pct}%" class="${used>cap?'over':''}"></i></div>
+    <div class="cap-status ${st.cls}">${esc(st.txt)}</div>
+    ${capWarn?`<div class="cap-warn">${esc(capWarn)}</div>`:''}`;
+  $('#capHead').querySelectorAll('[data-ctab]').forEach(b=> b.onclick=()=>{ capTab=b.dataset.ctab; renderCapBuilder(); });
+
+  if(capTab==='players'){
+    const rows=capFieldList().map(f=>{
+      const inTeam=capPick.some(p=>norm(p)===norm(f.name));
+      const sub=f.l? [f.l.pos?`P${f.l.pos}`:'', f.l.toPar!=null?parPretty(f.l.toPar):''].filter(Boolean).join(' · ') : (FIELD.length?'':'field price');
+      return `<div class="cap-row${inTeam?' in':''}" data-cadd="${esc(f.name)}">
+        <div class="cap-info"><b>${esc(f.name)}</b>${sub?`<span>${esc(sub)}</span>`:''}</div>
+        <span class="cap-sal">${fmtSal(f.sal)}</span>
+        <span class="cap-btn">${inTeam?'✓':'＋'}</span>
+      </div>`;
+    }).join('');
+    $('#capBody').innerHTML=`
+      <div class="field" style="margin-top:10px"><input type="text" id="capSearch" class="authinput" placeholder="Search the field…" value="${esc(capSearch)}" autocomplete="off" style="text-align:left"></div>
+      <div class="cap-list">${rows||'<div class="home-empty">No golfers match that search.</div>'}</div>`;
+    const si=$('#capSearch');
+    si.oninput=()=>{ capSearch=si.value; const keep=si.selectionStart; renderCapBuilder(); const si2=$('#capSearch'); si2.focus(); si2.setSelectionRange(keep,keep); };
+    $('#capBody').querySelectorAll('[data-cadd]').forEach(el=> el.onclick=()=>capToggle(el.dataset.cadd));
+  } else {
+    const rows=capPick.map(p=>`<div class="cap-row" data-crm="${esc(p)}">
+        <div class="cap-info"><b>${esc(p)}</b></div>
+        <span class="cap-sal">${fmtSal(salaryFor(p))}</span>
+        <span class="cap-btn rm">✕</span>
+      </div>`).join('');
+    $('#capBody').innerHTML=`
+      <div class="field" style="margin-top:10px"><label>Team name</label><input type="text" id="capTeamName" maxlength="40"></div>
+      <div class="cap-list">${rows||'<div class="home-empty">No golfers yet — switch to Players and start drafting.</div>'}</div>
+      <div class="field" style="margin-top:12px"><button class="btn" id="capSaveBtn" type="button" style="width:100%" ${st.ok?'':'disabled'}>${capPick.length>=need?'Submit lineup':'Save draft'}</button></div>`;
+    const tn=$('#capTeamName'); tn.value=capName; tn.oninput=()=>{ capName=tn.value; };
+    $('#capBody').querySelectorAll('[data-crm]').forEach(el=> el.onclick=()=>capToggle(el.dataset.crm));
+    $('#capSaveBtn').onclick=async ()=>{
+      const nm=($('#capTeamName').value||'').trim();
+      if(!nm){ toast('Name your team'); return; }
+      const stNow=capStatus(); if(!stNow.ok){ toast(stNow.txt); return; }
+      $('#capSaveBtn').disabled=true; $('#capSaveBtn').textContent='Saving…';
+      try{ await window.__league.saveMyLbTeam(nm, capPick.slice()); closeCapBuilder(); toast(capPick.length>=need?'Lineup submitted 🔒':'Draft saved — finish it before tee time'); }
+      catch(err){ toast(err?.message||'Save failed'); }
+      finally{ const b=$('#capSaveBtn'); if(b){ b.disabled=false; } }
+    };
+  }
+}
 // Leaderboard leagues reuse the same shell: the "match" tab becomes Standings, the h2h-only
 // tournament-board tab is hidden, and Chat stays. No crown/odds/weekend machinery here.
 function renderLbView(){
@@ -2374,6 +2622,10 @@ $('#lbEditBg').onclick=closeLbEdit;
 $('#lbRulesBtn').onclick=openLbRules;
 $('#lbRulesClose').onclick=closeLbRules;
 $('#lbRulesBg').onclick=closeLbRules;
+$('#scoEditClose').onclick=closeScoEdit;
+$('#scoEditBg').onclick=closeScoEdit;
+$('#capClose').onclick=closeCapBuilder;
+$('#capBg').onclick=closeCapBuilder;
 $('#lbSaveBtn').onclick=async ()=>{
   const nm=($('#lbTeamName').value||'').trim();
   const players=[...document.querySelectorAll('#lbPlayers [data-lbp]')].map(i=>i.value.trim()).filter(Boolean);
@@ -2384,15 +2636,21 @@ $('#lbSaveBtn').onclick=async ()=>{
   catch(e){ toast(e?.message||'Save failed'); }
   finally{ $('#lbSaveBtn').disabled=false; $('#lbSaveBtn').textContent='Save team'; }
 };
-window.lgFormat='h2h'; window.lgScoring='total';
+window.lgFormat='h2h'; window.lgScoring='total'; window.lgRoster='open';
 document.querySelectorAll('.fmt-opt[data-fmt]').forEach(b=> b.onclick=()=>{
   window.lgFormat=b.dataset.fmt;
   document.querySelectorAll('.fmt-opt[data-fmt]').forEach(x=>x.classList.toggle('sel', x===b));
-  $('#lgScoringField').style.display = b.dataset.fmt==='lb' ? '' : 'none';   // scoring choice only applies to leaderboard leagues
+  const lb=b.dataset.fmt==='lb';
+  $('#lgScoringField').style.display = lb ? '' : 'none';   // scoring + roster choices only apply to leaderboard leagues
+  $('#lgRosterField').style.display = lb ? '' : 'none';
 });
 document.querySelectorAll('.sco-opt').forEach(b=> b.onclick=()=>{
   window.lgScoring=b.dataset.sco;
   document.querySelectorAll('.sco-opt').forEach(x=>x.classList.toggle('sel', x===b));
+});
+document.querySelectorAll('.ros-opt').forEach(b=> b.onclick=()=>{
+  window.lgRoster=b.dataset.ros;
+  document.querySelectorAll('.ros-opt').forEach(x=>x.classList.toggle('sel', x===b));
 });
 $('#lgCreateGo').onclick=async ()=>{
   const name=($('#lgName').value||'').trim(), team=($('#lgTeam').value||'').trim();
@@ -2400,7 +2658,7 @@ $('#lgCreateGo').onclick=async ()=>{
   if(!team){ leagueSheetError('Give your team a name.'); return; }
   if(!window.__league){ leagueSheetError('Sign in first.'); return; }
   $('#lgCreateGo').disabled=true; $('#lgCreateGo').textContent='Creating…';
-  try{ const id=await window.__league.create(name, team, window.lgFormat, window.lgScoring); toast('League created 🔑 code copied'); enterLeague(id); }
+  try{ const id=await window.__league.create(name, team, window.lgFormat, window.lgScoring, window.lgRoster); toast('League created 🔑 code copied'); enterLeague(id); }
   catch(e){ leagueSheetError(e?.message||String(e)); }
   finally{ $('#lgCreateGo').disabled=false; $('#lgCreateGo').textContent='Create league'; }
 };
@@ -2460,7 +2718,7 @@ if('serviceWorker' in navigator){
    the background wakes the OLD page from memory without any navigation, so network-first fetching
    never runs. On each return to foreground (throttled), fetch the live index.html and compare its
    BUILD_ID to ours; if it changed, reload once. BUILD_ID must be bumped on every deploy. */
-const BUILD_ID='2026-07-18-l';
+const BUILD_ID='2026-07-18-n';
 let lastVerCheck=0, verReloaded=false;
 async function checkForNewVersion(){
   const now=Date.now();
@@ -2540,11 +2798,16 @@ async function startLeagueSync(){
       leagueRef=null;   // disables schedulePush — lb writes go through __league.saveMyLbTeam
       const lbRef=doc(fbDb,'leagues',LEAGUE_ID);
       if(unsubscribeLeague) unsubscribeLeague();
+      let prevCfgJson=null, cfgPrimed=false;
       unsubscribeLeague = onSnapshot(lbRef,(ds)=>{
         if(!ds.exists()) return;
         const d=ds.data();
         window.__lbEntries=d.entries||{};
         window.__lbMeta=d.meta||{};
+        // let everyone know when the host changes the scoring rules (skip the initial load)
+        const cfgJson=JSON.stringify(d.meta?.pointsCfg||null);
+        if(cfgPrimed && cfgJson!==prevCfgJson) window.toast?.('The host updated the scoring rules 📋');
+        prevCfgJson=cfgJson; cfgPrimed=true;
         document.dispatchEvent(new CustomEvent('mmt:lbUpdated'));
       },(e)=>console.error('LB listener error:',e));
       window.toast?.('Leaderboard league synced ☁️');
@@ -2645,6 +2908,7 @@ async function ensureUserAndLeagues(user){
         }
       }
       metas[id]={ name:meta.name, code:meta.code, format:meta.format||'h2h', scoring:meta.scoring||'total',
+        roster:meta.roster||'open',
         teamA:d.teams?.A?.name||'Team A', teamB:d.teams?.B?.name||'Team B',
         teamCount:Object.keys(d.entries||{}).length };
     }
@@ -2674,15 +2938,19 @@ window.__league = {
     await setDoc(doc(fbDb,'users',uid),{ leagues:arrayRemove(id) },{merge:true});
     await this.refresh();
   },
-  async create(name, teamName, format, scoring){
+  async create(name, teamName, format, scoring, roster){
     const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
     const id='lg-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6);
     const code=genCode();
     const defaults=structuredClone(window.__defaultTeams||{A:{name:'Team A',players:[]},B:{name:'Team B',players:[]}});
     if(format==='lb'){
+      const cap = roster==='cap';
       await setDoc(doc(fbDb,'leagues',id),{
-        entries:{ [uid]:{ name:teamName, players:defaults.A.players, owner:uid } },
-        meta:{ name, code, format:'lb', scoring:(scoring==='points'?'points':'total'), createdBy:uid, createdAt:serverTimestamp() },
+        // cap leagues start with an empty roster — you draft under the budget in the builder
+        entries:{ [uid]:{ name:teamName, players:(cap?[]:defaults.A.players), owner:uid } },
+        meta:{ name, code, format:'lb', scoring:(scoring==='points'?'points':'total'),
+               roster:(cap?'cap':'open'), ...(cap?{cap:100000, rosterSize:8}:{}),
+               createdBy:uid, createdAt:serverTimestamp() },
         createdAt:serverTimestamp(), updatedAt:serverTimestamp()
       });
     } else {
@@ -2707,7 +2975,8 @@ window.__league = {
       // leaderboard league: everyone gets their own team entry, no slot limit
       if(!d.entries?.[uid]){
         const defaults=structuredClone(window.__defaultTeams||{A:{players:[]}});
-        await setDoc(doc(fbDb,'leagues',id),{ entries:{ [uid]:{ name:teamName, players:defaults.A.players, owner:uid } } },{merge:true});
+        const players = d.meta?.roster==='cap' ? [] : defaults.A.players;   // cap leagues: draft in the builder
+        await setDoc(doc(fbDb,'leagues',id),{ entries:{ [uid]:{ name:teamName, players, owner:uid } } },{merge:true});
       }
     } else {
       const members=d.meta?.members||{};
@@ -2725,6 +2994,11 @@ window.__league = {
   async saveMyLbTeam(name, players){
     const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
     await setDoc(doc(fbDb,'leagues',LEAGUE_ID),{ entries:{ [uid]:{ name, players, owner:uid } } },{merge:true});
+  },
+  async savePointsCfg(cfg){
+    const uid=fbAuth.currentUser?.uid; if(!uid) throw new Error('Sign in first.');
+    // null = reset to defaults (remove the override entirely)
+    await setDoc(doc(fbDb,'leagues',LEAGUE_ID),{ meta:{ pointsCfg: cfg===null? deleteField() : cfg } },{merge:true});
   }
 };
 
